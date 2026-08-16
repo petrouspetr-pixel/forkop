@@ -2941,6 +2941,12 @@ function add_service_route_rules(config, sections) {
     }
     if (first != null) {
         push(config.route.rules, {
+            action: "resolve",
+            inbound: tproxy_inbound_matcher(),
+            server: runtime_constants.DNS_SERVER_TAG,
+            domain: runtime_constants.CHECK_PROXY_IP_DOMAIN
+        });
+        push(config.route.rules, {
             action: "route",
             inbound: tproxy_inbound_matcher(),
             outbound: outbound_tag(first[".name"]),
