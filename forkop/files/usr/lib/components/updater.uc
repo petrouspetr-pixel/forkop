@@ -189,6 +189,22 @@ function release_asset_url(name) {
     }
 }
 
+function release_asset_size_by_url(url) {
+    let release = object_or_empty(read_stdin_json());
+    url = as_string(url);
+
+    for (let asset in array_or_empty(release.assets)) {
+        if (type(asset) != "object" ||
+            as_string(asset.browser_download_url || "") != url)
+            continue;
+
+        let size = arg_number(asset.size);
+        if (size > 0)
+            print(size, "\n");
+        return;
+    }
+}
+
 function release_asset_name_by_suffix(suffix) {
     let release = object_or_empty(read_stdin_json());
     for (let asset in array_or_empty(release.assets)) {
@@ -1159,6 +1175,8 @@ else if (mode == "release-asset-name")
     release_asset_name(ARGV[1], ARGV[2]);
 else if (mode == "release-asset-url")
     release_asset_url(ARGV[1]);
+else if (mode == "release-asset-size-by-url")
+    release_asset_size_by_url(ARGV[1]);
 else if (mode == "release-asset-name-by-suffix")
     release_asset_name_by_suffix(ARGV[1]);
 else if (mode == "release-asset-url-by-suffix")

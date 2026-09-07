@@ -480,4 +480,43 @@ if (value.running !== false || value.success !== false || value.exit_code !== nu
 }
 NODE
 
+sing_box_release_json="$(cat <<'JSON'
+{
+  "tag_name": "v1.14.0",
+  "assets": [
+    {
+      "name": "sing-box-extended_1.14.0_test.ipk",
+      "browser_download_url": "https://example.com/sing-box-extended.ipk",
+      "size": 31457280
+    }
+  ]
+}
+JSON
+)"
+
+assert_eq "31457280" \
+  "$(printf '%s' "$sing_box_release_json" | ucode "$UPDATER" release-asset-size-by-url 'https://example.com/sing-box-extended.ipk')" \
+  "release asset size"
+
+[ -z "$(printf '%s' "$sing_box_release_json" | ucode "$UPDATER" release-asset-size-by-url 'https://example.com/missing.ipk')" ] || \
+  fail "missing release asset must not report a size"
+
+ucode -L "$FORKOP_LIB" "$ACTION_UC" tmp-download-capacity-fixture \
+  31457280 100663296 100663296 33554432 ||
+  fail "sufficient tmpfs and MemAvailable capacity must pass"
+
+if ucode -L "$FORKOP_LIB" "$ACTION_UC" tmp-download-capacity-fixture \
+  31457280 100663296 62914560 33554432; then
+  fail "insufficient MemAvailable must reject the download"
+fi
+
+if ucode -L "$FORKOP_LIB" "$ACTION_UC" tmp-download-capacity-fixture \
+  31457280 62914560 100663296 33554432; then
+  fail "insufficient tmpfs capacity must reject the download"
+fi
+
+ucode -L "$FORKOP_LIB" "$ACTION_UC" tmp-download-capacity-fixture \
+  0 0 0 33554432 ||
+  fail "unknown asset size must preserve legacy download behavior"
+
 printf 'component updater job checks passed\n'
