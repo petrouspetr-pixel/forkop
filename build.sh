@@ -44,6 +44,7 @@ PROJECT_URL="https://github.com/ushan0v/forkop"
 BACKEND_DEPENDS_IPK="libc, ca-bundle, kmod-inet-diag, kmod-netlink-diag, kmod-tun, curl, ucode, ucode-mod-fs, ucode-mod-uci, kmod-nft-tproxy, coreutils-base64, bind-dig, nftables, kmod-nft-nat, ip-full"
 BACKEND_DEPENDS_APK="bind-dig ca-bundle coreutils-base64 curl ip-full kmod-inet-diag kmod-netlink-diag kmod-nft-nat kmod-nft-tproxy kmod-tun libc nftables ucode ucode-mod-fs ucode-mod-uci !https-dns-proxy !nextdns !luci-app-passwall !luci-app-passwall2"
 BACKEND_CONFLICTS_IPK="https-dns-proxy, nextdns, luci-app-passwall, luci-app-passwall2"
+BACKEND_REQUIRE_USER="forkopbyedpi:forkopbyedpi"
 APP_DEPENDS_IPK="libc, luci-base, forkop"
 APP_DEPENDS_APK="libc luci-base forkop"
 
@@ -219,6 +220,7 @@ generate_apk_metadata_files() {
   local package_name="$1"
   local package_root="$2"
   local conffile_path="${3:-}"
+  local require_user="${4:-}"
   local list_file="$package_root/lib/apk/packages/${package_name}.list"
 
   make_dir "$(dirname "$list_file")"
@@ -235,6 +237,10 @@ generate_apk_metadata_files() {
     hash_value="$(sha256sum "$package_root$conffile_path" | awk '{print $1}')"
     printf '%s\n' "$conffile_path" > "$conffiles_file"
     printf '%s %s\n' "$conffile_path" "$hash_value" > "$conffiles_static_file"
+  fi
+
+  if [[ -n "$require_user" ]]; then
+    printf '%s\n' "$require_user" > "$package_root/lib/apk/packages/${package_name}.rusers"
   fi
 }
 
@@ -254,6 +260,7 @@ Package: forkop
 Version: ${RELEASE_VERSION}
 Depends: ${BACKEND_DEPENDS_IPK}
 Conflicts: ${BACKEND_CONFLICTS_IPK}
+Require-User: ${BACKEND_REQUIRE_USER}
 License: GPL-2.0-or-later
 Section: net
 URL: ${PROJECT_URL}
@@ -269,6 +276,11 @@ EOF
 
   cat > "$control_dir/postinst" <<'EOF'
 #!/bin/sh
+[ -s ${IPKG_INSTROOT}/lib/functions.sh ] || exit 0
+. ${IPKG_INSTROOT}/lib/functions.sh
+export root="${IPKG_INSTROOT}"
+export pkgname="forkop"
+add_group_and_user
 [ -n "${IPKG_INSTROOT}" ] && exit 0
 FORKOP_LIB=/usr/lib/forkop ucode -L /usr/lib/forkop /usr/lib/forkop/config/migration.uc migrate || exit $?
 /usr/bin/forkop package_postinst
@@ -405,10 +417,16 @@ exit(0);
 EOF
 
   cat > "$scripts_dir/backend-post-install.sh" <<'EOF'
-#!/usr/bin/ucode
-if (getenv("IPKG_INSTROOT") == null || getenv("IPKG_INSTROOT") == "")
-    exit(system("FORKOP_LIB=/usr/lib/forkop ucode -L /usr/lib/forkop /usr/lib/forkop/config/migration.uc migrate && /usr/bin/forkop package_postinst"));
-exit(0);
+#!/bin/sh
+[ "${IPKG_NO_SCRIPT}" = "1" ] && exit 0
+[ -s ${IPKG_INSTROOT}/lib/functions.sh ] || exit 0
+. ${IPKG_INSTROOT}/lib/functions.sh
+export root="${IPKG_INSTROOT}"
+export pkgname="forkop"
+add_group_and_user
+[ -n "${IPKG_INSTROOT}" ] && exit 0
+FORKOP_LIB=/usr/lib/forkop ucode -L /usr/lib/forkop /usr/lib/forkop/config/migration.uc migrate &&
+  /usr/bin/forkop package_postinst
 EOF
 
   cat > "$scripts_dir/backend-pre-deinstall.sh" <<'EOF'
@@ -428,10 +446,17 @@ exit(0);
 EOF
 
   cat > "$scripts_dir/backend-post-upgrade.sh" <<'EOF'
-#!/usr/bin/ucode
-if (getenv("IPKG_INSTROOT") == null || getenv("IPKG_INSTROOT") == "")
-    exit(system("FORKOP_LIB=/usr/lib/forkop ucode -L /usr/lib/forkop /usr/lib/forkop/config/migration.uc migrate && /usr/bin/forkop package_postinst"));
-exit(0);
+#!/bin/sh
+export PKG_UPGRADE=1
+[ "${IPKG_NO_SCRIPT}" = "1" ] && exit 0
+[ -s ${IPKG_INSTROOT}/lib/functions.sh ] || exit 0
+. ${IPKG_INSTROOT}/lib/functions.sh
+export root="${IPKG_INSTROOT}"
+export pkgname="forkop"
+add_group_and_user
+[ -n "${IPKG_INSTROOT}" ] && exit 0
+FORKOP_LIB=/usr/lib/forkop ucode -L /usr/lib/forkop /usr/lib/forkop/config/migration.uc migrate &&
+  /usr/bin/forkop package_postinst
 EOF
 
   chmod 0755 "$scripts_dir"/backend-*.sh
@@ -593,6 +618,7 @@ verify_ipk_metadata() {
   grep -q "^Version: ${expected_version}$" "$tmp_dir/control"
   if [[ "$expected_package" == "forkop" ]]; then
     grep -q "^Conflicts: ${BACKEND_CONFLICTS_IPK}$" "$tmp_dir/control"
+    grep -q "^Require-User: ${BACKEND_REQUIRE_USER}$" "$tmp_dir/control"
   fi
   rm -rf "$tmp_dir"
 }
@@ -706,7 +732,7 @@ main() {
     "$i18n_control" \
     "$output_dir/luci-i18n-forkop-ru_${RELEASE_VERSION}.ipk"
 
-  generate_apk_metadata_files "forkop" "$backend_root" "/etc/config/forkop"
+  generate_apk_metadata_files "forkop" "$backend_root" "/etc/config/forkop" "$BACKEND_REQUIRE_USER"
   generate_apk_metadata_files "luci-app-forkop" "$app_root"
   generate_apk_metadata_files "luci-i18n-forkop-ru" "$i18n_root"
   write_backend_apk_scripts "$apk_scripts"

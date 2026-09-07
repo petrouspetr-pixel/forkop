@@ -27,6 +27,7 @@ define Package/forkop
 	TITLE:=Forkop backend service
 	URL:=https://github.com/ushan0v/forkop
 	PKGARCH:=all
+	USERID:=forkopbyedpi:forkopbyedpi
 endef
 
 define Package/forkop/description
