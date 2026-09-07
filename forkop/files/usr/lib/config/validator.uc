@@ -662,7 +662,8 @@ function mwan3_has_enabled_interface() {
 }
 
 function mwan3_has_enabled_interface_from_sections() {
-    for (let section in uci_core().section_objects("mwan3", "interface"))
+    let core = uci_core();
+    for (let section in core.section_objects("mwan3", "interface"))
         if (option(section, "enabled", "0") == "1")
             return true;
     return false;
@@ -2142,6 +2143,8 @@ else if (mode == "dhcp-has-https-dns-proxy-options")
     dhcp_has_https_dns_proxy_options_exit(ARGV[1]);
 else if (mode == "mwan3-has-enabled-interface")
     exit(mwan3_has_enabled_interface() ? 0 : 1);
+else if (mode == "mwan3-has-enabled-interface-from-sections")
+    exit(mwan3_has_enabled_interface_from_sections() ? 0 : 1);
 else if (mode == "mwan3-is-active")
     exit(mwan3_is_active() ? 0 : 1);
 else if (mode == "check-requirements")
