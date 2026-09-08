@@ -94,10 +94,9 @@ supervisor_command="$(
     1080 '-o 1' /tmp/forkop-byedpi-child.pid
 )"
 
-printf '%s' "$supervisor_command" |
-  grep -Fq "'start-stop-daemon' '-S' '-p' '/tmp/forkop-byedpi-child.pid' '-c' 'forkopbyedpi:forkopbyedpi' '-x' '/usr/bin/ciadpi' '--' '--ip' '127.0.0.1' '--port' '1080'" ||
+grep -Fq "'start-stop-daemon' '-S' '-p' '/tmp/forkop-byedpi-child.pid' '-c' 'forkopbyedpi:forkopbyedpi' '-x' '/usr/bin/ciadpi' '--' '--ip' '127.0.0.1' '--port' '1080'" <<<"$supervisor_command" ||
   fail "Forkop-managed ciadpi must start through start-stop-daemon under the dedicated user"
-printf '%s' "$supervisor_command" | grep -Fq "'-o' '1'" ||
+grep -Fq "'-o' '1'" <<<"$supervisor_command" ||
   fail "ByeDPI strategy arguments must survive privilege dropping"
 
 printf 'ByeDPI runtime ownership checks passed\n'
