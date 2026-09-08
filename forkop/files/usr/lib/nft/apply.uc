@@ -147,17 +147,6 @@ function byedpi_runtime_uid() {
     return match(uid, /^[0-9]+$/) != null ? uid : "";
 }
 
-function nft_add_byedpi_runtime_owner_rule(table, outbound_mark) {
-    let uid = byedpi_runtime_uid();
-    if (uid == "")
-        return true;
-
-    return nft_add_rule(table, "mangle_output", [
-        "meta", "skuid", uid,
-        "meta", "mark", "set", outbound_mark,
-        "counter", "return"
-    ]);
-}
 
 function log_debug(message) {
     run_args([ "logger", "-t", "forkop", "[debug] " + as_string(message) ]);
@@ -493,6 +482,18 @@ function nft_add_rule(table, chain, args) {
     for (let arg in args)
         push(command, arg);
     return run_args(command);
+}
+
+function nft_add_byedpi_runtime_owner_rule(table, outbound_mark) {
+    let uid = byedpi_runtime_uid();
+    if (uid == "")
+        return true;
+
+    return nft_add_rule(table, "mangle_output", [
+        "meta", "skuid", uid,
+        "meta", "mark", "set", outbound_mark,
+        "counter", "return"
+    ]);
 }
 
 function nft_insert_rule(table, chain, args) {
