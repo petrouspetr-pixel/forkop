@@ -132,6 +132,11 @@ function ensure_tproxy_firewall_include() {
     return reload_firewall();
 }
 
+function unlink_if_exists(path) {
+    if (path_exists(path))
+        fs.unlink(as_string(path));
+}
+
 function remove_tproxy_firewall_include() {
     let changed = false;
     let section = uci_core.get_all(FIREWALL_CONFIG, FIREWALL_INCLUDE_SECTION);
@@ -156,10 +161,6 @@ function remove_tproxy_firewall_include() {
     return reload_firewall();
 }
 
-function unlink_if_exists(path) {
-    if (path_exists(path))
-        fs.unlink(as_string(path));
-}
 
 function remove_rt_tables_entry() {
     let data = fs.readfile(RT_TABLES_PATH);
