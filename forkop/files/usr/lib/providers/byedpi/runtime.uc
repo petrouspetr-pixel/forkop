@@ -304,6 +304,7 @@ function start_rule(section, index_value) {
     let command = command_from_args([
         "ucode",
         "-L", LIB_DIR,
+        "--",
         LIB_DIR + "/providers/byedpi/runtime.uc",
         "supervisor",
         name,

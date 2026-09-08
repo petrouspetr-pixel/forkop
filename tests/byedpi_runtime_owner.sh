@@ -90,9 +90,12 @@ supervisor_command="$(
   BYEDPI_BIN="/usr/bin/ciadpi" \
   BYEDPI_RUNTIME_USER="forkopbyedpi" \
   BYEDPI_RUNTIME_GROUP="forkopbyedpi" \
-  ucode -L "$FORKOP_LIB" "$BYEDPI_RUNTIME_UC" supervisor-command \
+  ucode -L "$FORKOP_LIB" -- "$BYEDPI_RUNTIME_UC" supervisor-command \
     1080 '-o 1' /tmp/forkop-byedpi-child.pid
 )"
+
+grep -Fq '"--",' "$BYEDPI_RUNTIME_UC" ||
+  fail "Forkop-managed supervisor launch must protect dash-prefixed strategy arguments with ucode --"
 
 case "$supervisor_command" in
   *start-stop-daemon*) ;;
