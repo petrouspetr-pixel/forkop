@@ -664,4 +664,14 @@ same_level="$(ucode -L "$FORKOP_LIB" "$PRIORITY_UC" select-faster-fixture \
 printf '%s\n' "$same_level" | grep -Fq '"tag": "b"' ||
   fail "same-level switching should compare candidates with the active delay from the same pass"
 
+priority_now="$(ucode -L "$FORKOP_LIB" "$PRIORITY_UC" now-seconds-fixture)"
+monotonic_now="$(ucode -e 'print(clock(true)[0], "\n")')"
+case "$priority_now:$monotonic_now" in
+  *[!0-9:]*|'':*) fail "Priority monotonic clock fixture returned invalid data" ;;
+esac
+clock_delta=$((priority_now - monotonic_now))
+[ "$clock_delta" -lt 0 ] && clock_delta=$((-clock_delta))
+[ "$clock_delta" -le 2 ] ||
+  fail "Priority scheduling must use ucode CLOCK_MONOTONIC"
+
 printf 'Priority failover checks passed\n'

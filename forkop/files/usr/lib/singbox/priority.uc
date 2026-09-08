@@ -78,7 +78,8 @@ function log_message(message, level) {
 }
 
 function now_seconds() {
-    return int(clock()[0]);
+    // Priority intervals must not depend on wall-clock/NTP adjustments.
+    return int(clock(true)[0]);
 }
 
 function duration_to_milliseconds(value, fallback_ms) {
@@ -486,7 +487,9 @@ else if (mode == "select-fixture")
     select_fixture(ARGV[1], ARGV[2], ARGV[3], ARGV[4], ARGV[5]);
 else if (mode == "select-faster-fixture")
     select_faster_fixture(ARGV[1], ARGV[2], ARGV[3], ARGV[4]);
+else if (mode == "now-seconds-fixture")
+    print(now_seconds(), "\n");
 else {
-    warn("Usage: singbox/priority.uc <start-runtime|stop-runtime|worker|select-fixture|select-faster-fixture>\n");
+    warn("Usage: singbox/priority.uc <start-runtime|stop-runtime|worker|select-fixture|select-faster-fixture|now-seconds-fixture>\n");
     exit(1);
 }
