@@ -662,7 +662,9 @@ function mwan3_has_enabled_interface() {
 }
 
 function mwan3_has_enabled_interface_from_sections() {
-    let core = uci_core();
+    if (uci_core_module == null)
+        uci_core_module = require("core.uci");
+    let core = uci_core_module;
     for (let section in core.section_objects("mwan3", "interface"))
         if (option(section, "enabled", "0") == "1")
             return true;
