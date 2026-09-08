@@ -48,7 +48,7 @@ generate_for_version() {
 }
 
 generate_for_version "1.13.18-extended-2.6.5" "$WORK_DIR/sb113.json"
-grep -Fq '"independent_cache":true' "$WORK_DIR/sb113.json" ||
+grep -Eq '"independent_cache"[[:space:]]*:[[:space:]]*true' "$WORK_DIR/sb113.json" ||
   fail "sing-box 1.13 must keep independent_cache for legacy semantics"
 
 generate_for_version "1.14.0-extended-2.7.0" "$WORK_DIR/sb114.json"
@@ -57,7 +57,7 @@ if grep -Fq '"independent_cache"' "$WORK_DIR/sb114.json"; then
 fi
 
 generate_for_version "" "$WORK_DIR/unknown.json"
-grep -Fq '"independent_cache":true' "$WORK_DIR/unknown.json" ||
+grep -Eq '"independent_cache"[[:space:]]*:[[:space:]]*true' "$WORK_DIR/unknown.json" ||
   fail "unknown sing-box version must preserve legacy behavior"
 
 printf 'sing-box 1.14 independent_cache compatibility checks passed\n'
