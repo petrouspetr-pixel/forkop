@@ -170,7 +170,12 @@ FORKOP_RT_TABLES="$WORK_DIR/rt_tables_upgrade" \
   ucode -L "$FORKOP_LIB" "$PACKAGE_UC" prerm upgrade
 [ -f "$FORKOP_PACKAGE_UPGRADE_STATE" ] ||
   fail "package pre-upgrade must remember a running service"
+cat >"$WORK_DIR/postinst-firewall.state" <<'EOF_UCI'
+firewall.defaults=defaults
+EOF_UCI
 FORKOP_PACKAGE_TEST_MODE=1 \
+FORKOP_UCI_STATE_FILE="$WORK_DIR/postinst-firewall.state" \
+FORKOP_FIREWALL_INCLUDE_FILE="$WORK_DIR/forkop-input.nft" \
 FORKOP_INIT="$WORK_DIR/upgrade-init" \
 FORKOP_START_LOG="$WORK_DIR/upgrade-start.log" \
   ucode -L "$FORKOP_LIB" "$PACKAGE_UC" postinst
