@@ -1295,6 +1295,13 @@ function ensure_rt_table_entry(path, table_id, table_name) {
     return write_text_file(path, data + as_string(table_id) + " " + as_string(table_name) + "\n");
 }
 
+function tproxy_ipv6_enabled() {
+    let all_disabled = trim(command_output_quiet_from_args([ "sysctl", "-n", "net.ipv6.conf.all.disable_ipv6" ]));
+    let lo_disabled = trim(command_output_quiet_from_args([ "sysctl", "-n", "net.ipv6.conf.lo.disable_ipv6" ]));
+
+    return all_disabled != "1" && lo_disabled != "1";
+}
+
 function tproxy_route4_present(table) {
     return has_local_default_route_text(command_output_quiet_from_args([ "ip", "route", "list", "table", table ]), 4);
 }
@@ -1304,7 +1311,8 @@ function tproxy_route6_present(table) {
 }
 
 function tproxy_route_present(table) {
-    return tproxy_route4_present(table) && tproxy_route6_present(table);
+    return tproxy_route4_present(table) &&
+        (!tproxy_ipv6_enabled() || tproxy_route6_present(table));
 }
 
 function tproxy_marking_rule4_present(table, mark) {
@@ -1316,7 +1324,8 @@ function tproxy_marking_rule6_present(table, mark) {
 }
 
 function tproxy_marking_rule_present(table, mark) {
-    return tproxy_marking_rule4_present(table, mark) && tproxy_marking_rule6_present(table, mark);
+    return tproxy_marking_rule4_present(table, mark) &&
+        (!tproxy_ipv6_enabled() || tproxy_marking_rule6_present(table, mark));
 }
 
 function tproxy_route_rule_present(table, mark) {
@@ -1325,6 +1334,7 @@ function tproxy_route_rule_present(table, mark) {
 
 function ensure_tproxy_route_rule(table, mark, rt_tables_path) {
     rt_tables_path = as_string(rt_tables_path || "/etc/iproute2/rt_tables");
+    let ipv6_enabled = tproxy_ipv6_enabled();
 
     if (!ensure_rt_table_entry(rt_tables_path, "105", table)) {
         log_fatal("Failed to update route table registry. Aborted.");
@@ -1342,7 +1352,10 @@ function ensure_tproxy_route_rule(table, mark, rt_tables_path) {
         log_debug("IPv4 TPROXY route already exists");
     }
 
-    if (!tproxy_route6_present(table)) {
+    if (!ipv6_enabled) {
+        log_debug("IPv6 is disabled; skipping IPv6 TPROXY route");
+    }
+    else if (!tproxy_route6_present(table)) {
         log_debug("Added IPv6 TPROXY route");
         if (!run_args([ "ip", "-6", "route", "add", "local", "::/0", "dev", "lo", "table", table ]) && !tproxy_route6_present(table)) {
             log_fatal("Failed to add IPv6 route for tproxy. Aborted.");
@@ -1364,7 +1377,10 @@ function ensure_tproxy_route_rule(table, mark, rt_tables_path) {
         log_debug("IPv4 TPROXY marking rule already exists");
     }
 
-    if (!tproxy_marking_rule6_present(table, mark)) {
+    if (!ipv6_enabled) {
+        log_debug("IPv6 is disabled; skipping IPv6 TPROXY marking rule");
+    }
+    else if (!tproxy_marking_rule6_present(table, mark)) {
         log_debug("Creating IPv6 TPROXY marking rule");
         if (!run_args([ "ip", "-6", "rule", "add", "fwmark", as_string(mark) + "/" + as_string(mark), "table", table, "priority", "105" ]) && !tproxy_marking_rule6_present(table, mark)) {
             log_fatal("Failed to create IPv6 marking rule. Aborted.");
