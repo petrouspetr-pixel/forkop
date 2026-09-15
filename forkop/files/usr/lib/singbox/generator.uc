@@ -21,6 +21,7 @@ let fixture_uci_data = null;
 let runtime_settings_cache = null;
 let runtime_ruleset_folder = runtime_constants.TMP_RULESET_FOLDER;
 let runtime_supports_xhttp = true;
+let runtime_sing_box_version = "";
 
 let as_string = common.as_string;
 let read_json_file = common.read_json_file;
@@ -47,6 +48,16 @@ let url_path = runtime_url.path;
 let url_query_params = runtime_url.query_params;
 
 const CONFIG_NAME = "forkop";
+
+function sing_box_uses_legacy_independent_cache(value) {
+    let matched = match(as_string(value), /^([0-9]+)[.]([0-9]+)/);
+    if (matched == null)
+        return true;
+
+    let major = int(matched[1], 10);
+    let minor = int(matched[2], 10);
+    return major < 1 || (major == 1 && minor < 14);
+}
 
 function parent_dir(path) {
     path = as_string(path);
@@ -461,7 +472,7 @@ function base_config(settings, service_address, runtime_context) {
     runtime_context.dns_health_inbounds = dns_config.sniff_inbounds;
     runtime_context.default_domain_resolver = runtime_dns.default_domain_resolver(settings);
 
-    return {
+    let result = {
         log: {
             disabled: false,
             level: log_level,
@@ -471,8 +482,7 @@ function base_config(settings, service_address, runtime_context) {
             servers: dns_servers,
             rules: dns_rules,
             final: runtime_constants.DNS_SERVER_TAG,
-            strategy: option(settings, "dns_strategy", "prefer_ipv4"),
-            independent_cache: true
+            strategy: option(settings, "dns_strategy", "prefer_ipv4")
         },
         ntp: {},
         certificate: {},
@@ -493,6 +503,9 @@ function base_config(settings, service_address, runtime_context) {
             clash_api: clash_api_config(settings, service_address)
         }
     };
+    if (sing_box_uses_legacy_independent_cache(runtime_sing_box_version))
+        result.dns.independent_cache = true;
+    return result;
 }
 
 function supported_subscription_outbound(outbound) {
@@ -823,28 +836,34 @@ function add_subscription_source_with_state(config, section, source_index, sourc
 }
 
 function duration_to_seconds(value) {
-    value = as_string(value);
-    if (value == "")
+    let rest = as_string(value);
+    if (rest == "")
         return null;
-    if (match(value, /^[0-9]+$/) != null)
-        return int(value, 10);
+    if (match(rest, /^[0-9]+$/) != null)
+        return int(rest, 10);
 
-    let suffix = substr(value, length(value) - 1);
-    let number = substr(value, 0, length(value) - 1);
-    if (match(number, /^[0-9]+$/) == null)
-        return null;
+    let total = 0.0;
+    let multipliers = {
+        ns: 0.000000001,
+        us: 0.000001,
+        ms: 0.001,
+        s: 1,
+        m: 60,
+        h: 3600,
+        d: 86400
+    };
 
-    let multiplier = null;
-    if (suffix == "s")
-        multiplier = 1;
-    else if (suffix == "m")
-        multiplier = 60;
-    else if (suffix == "h")
-        multiplier = 3600;
-    else if (suffix == "d")
-        multiplier = 86400;
+    while (rest != "") {
+        let matched = match(rest, /^([0-9]+(\.[0-9]+)?)(ns|us|ms|s|m|h|d)/);
+        if (!matched)
+            return null;
 
-    return multiplier == null ? null : int(number, 10) * multiplier;
+        let token = as_string(matched[0]);
+        total += (matched[1] * 1) * multipliers[matched[3]];
+        rest = substr(rest, length(token));
+    }
+
+    return total <= 0 ? null : int(total + 0.5);
 }
 
 function urltest_check_interval(section, urltest_id) {
@@ -852,23 +871,22 @@ function urltest_check_interval(section, urltest_id) {
     return interval != "" ? interval : "3m";
 }
 
-function legacy_urltest_idle_timeout(section, urltest_id) {
-    if (urltest_id != "urltest")
-        return "";
-
-    let settings = connections.urltest_settings(section, urltest_id);
-    if (type(settings) == "object" && as_string(settings[".type"] || "") == "urltest")
-        return "";
-
-    let interval = urltest_check_interval(section, urltest_id);
-    let interval_seconds = duration_to_seconds(interval);
-    let default_idle_seconds = duration_to_seconds(runtime_constants.URLTEST_DEFAULT_IDLE_TIMEOUT);
-    return interval_seconds != null && interval_seconds > default_idle_seconds ? interval : "";
-}
-
 function urltest_idle_timeout(section, urltest_id) {
     let configured = connections.urltest_idle_timeout(section, urltest_id);
-    return configured != "" ? configured : legacy_urltest_idle_timeout(section, urltest_id);
+    let interval = urltest_check_interval(section, urltest_id);
+    let interval_seconds = duration_to_seconds(interval);
+    let idle_seconds = duration_to_seconds(configured != ""
+        ? configured
+        : runtime_constants.URLTEST_DEFAULT_IDLE_TIMEOUT);
+
+    // sing-box refuses to start a URLTest group whose interval exceeds its
+    // idle_timeout, and substitutes URLTEST_DEFAULT_IDLE_TIMEOUT when the
+    // option is omitted. Raise the timeout to the interval instead of emitting
+    // a config that fails with "interval must be less or equal than idle_timeout".
+    if (interval_seconds != null && idle_seconds != null && interval_seconds > idle_seconds)
+        return interval;
+
+    return configured;
 }
 
 function supported_urltest_filter_mode(mode) {
@@ -1240,6 +1258,32 @@ function dashboard_filtered_outbounds(section, selector_tags, state, group_outbo
     );
 }
 
+// Section-level exclusions define the pool of servers the whole section may use: a server excluded
+// here must not stay reachable through an URLTest or Priority group either. Only the exclude half is
+// propagated - the include half may be group based, and group membership is only known once the
+// groups themselves are built.
+function section_pool_candidate_outbounds(section, urltest_candidate_tags, state) {
+    if (!filter_mode_uses_exclude(connections.dashboard_filter_mode(section)))
+        return urltest_candidate_tags;
+
+    return filter_candidate_outbounds(
+        "exclude",
+        urltest_candidate_tags,
+        object_or_empty(object_or_empty(state.outboundMetadata).names),
+        dashboard_country_metadata(section, state),
+        object_or_empty(state.outboundMetadata),
+        // include side is unused in "exclude" mode
+        [], [], [], false, [], [], [],
+        connections.dashboard_exclude_outbounds(section),
+        connections.dashboard_exclude_regex(section),
+        connections.dashboard_exclude_countries(section),
+        connections.dashboard_exclude_proxy_parameters(section),
+        connections.dashboard_exclude_protocols(section),
+        connections.dashboard_exclude_transports(section),
+        connections.dashboard_exclude_securities(section)
+    );
+}
+
 function priority_levels_with_outbounds(group_id, urltest_candidate_tags, state) {
     let result = [];
     let assigned = {};
@@ -1389,9 +1433,10 @@ function add_proxy_selector(config, section, selector_tags, urltest_candidate_ta
     let urltest_tags = [];
     let priority_tags = [];
     let group_outbounds = {};
+    let group_candidate_tags = section_pool_candidate_outbounds(section, urltest_candidate_tags, state);
 
     for (let urltest_id in connections.urltests(section)) {
-        let urltest = add_urltest_outbound(config, section, urltest_id, urltest_candidate_tags, state);
+        let urltest = add_urltest_outbound(config, section, urltest_id, group_candidate_tags, state);
         remember_dashboard_group_outbounds(
             group_outbounds,
             connections.urltest_display_name(section, urltest_id),
@@ -1404,7 +1449,7 @@ function add_proxy_selector(config, section, selector_tags, urltest_candidate_ta
     }
 
     for (let group_id in connections.priority_groups(section)) {
-        let priority = add_priority_group_outbound(config, section, group_id, urltest_candidate_tags, state);
+        let priority = add_priority_group_outbound(config, section, group_id, group_candidate_tags, state);
         remember_dashboard_group_outbounds(
             group_outbounds,
             connections.priority_group_display_name(section, group_id),
@@ -2909,6 +2954,12 @@ function add_service_route_rules(config, sections) {
     }
     if (first != null) {
         push(config.route.rules, {
+            action: "resolve",
+            inbound: tproxy_inbound_matcher(),
+            server: runtime_constants.DNS_SERVER_TAG,
+            domain: runtime_constants.CHECK_PROXY_IP_DOMAIN
+        });
+        push(config.route.rules, {
             action: "route",
             inbound: tproxy_inbound_matcher(),
             outbound: outbound_tag(first[".name"]),
@@ -3005,10 +3056,11 @@ function add_server_routes(config, servers, sections) {
     }
 }
 
-function generate_config(output_path, service_address, mwan3_active, supports_xhttp, deferred_sections) {
+function generate_config(output_path, service_address, mwan3_active, supports_xhttp, deferred_sections, sing_box_version) {
     runtime_supports_xhttp = supports_xhttp == null || as_string(supports_xhttp) == ""
         ? true
         : cli_bool(supports_xhttp);
+    runtime_sing_box_version = as_string(sing_box_version || "");
     let cursor = uci_cursor();
     cursor.load(CONFIG_NAME);
     runtime_settings_cache = object_or_empty(cursor.get_all(CONFIG_NAME, "settings"));
@@ -3048,11 +3100,11 @@ function generate_config(output_path, service_address, mwan3_active, supports_xh
     }
 }
 
-function generate_config_fixture(fixture_path, output_path, service_address, mwan3_active, supports_xhttp, deferred_sections) {
+function generate_config_fixture(fixture_path, output_path, service_address, mwan3_active, supports_xhttp, deferred_sections, sing_box_version) {
     use_fixture_cursor(fixture_path);
     runtime_subscription.set_section_cache_dir(output_path + ".section-cache");
     runtime_ruleset_folder = output_path + ".rulesets";
-    generate_config(output_path, service_address, mwan3_active, supports_xhttp, deferred_sections);
+    generate_config(output_path, service_address, mwan3_active, supports_xhttp, deferred_sections, sing_box_version);
 }
 
 function stdin_length() {
@@ -3166,9 +3218,9 @@ function object_nonempty_stdin() {
 let mode = ARGV[0] || "";
 
 if (mode == "generate-config")
-    generate_config(ARGV[1], ARGV[2], ARGV[3], ARGV[4], ARGV[5] || "");
+    generate_config(ARGV[1], ARGV[2], ARGV[3], ARGV[4], ARGV[5] || "", ARGV[6] || "");
 else if (mode == "generate-config-fixture")
-    generate_config_fixture(ARGV[1], ARGV[2], ARGV[3], ARGV[4], ARGV[5], ARGV[6] || "");
+    generate_config_fixture(ARGV[1], ARGV[2], ARGV[3], ARGV[4], ARGV[5], ARGV[6] || "", ARGV[7] || "");
 else if (mode == "stdin-length")
     stdin_length();
 else if (mode == "stdin-contains")

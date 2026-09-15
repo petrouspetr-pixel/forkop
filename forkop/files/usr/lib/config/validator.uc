@@ -662,7 +662,10 @@ function mwan3_has_enabled_interface() {
 }
 
 function mwan3_has_enabled_interface_from_sections() {
-    for (let section in uci_core().section_objects("mwan3", "interface"))
+    if (uci_core_module == null)
+        uci_core_module = require("core.uci");
+    let core = uci_core_module;
+    for (let section in core.section_objects("mwan3", "interface"))
         if (option(section, "enabled", "0") == "1")
             return true;
     return false;
@@ -921,6 +924,11 @@ function validate_dns_settings(settings, sections, context) {
         validate_required_duration_option(option(settings, "dns_check_interval", "10s"), "settings.dns_check_interval");
         validate_required_duration_option(option(settings, "dns_recovery_check_interval", "60s"), "settings.dns_recovery_check_interval");
         validate_required_duration_option(option(settings, "dns_check_timeout", "2s"), "settings.dns_check_timeout");
+        for (let name in [ "dns_failure_threshold", "dns_recovery_threshold" ]) {
+            let value = trim(option(settings, name, "3"));
+            if (match(value, /^[0-9]+$/) == null || int(value) < 1 || int(value) > 10)
+                fail_validation("Invalid " + name + " value '" + value + "'. Use a number from 1 to 10. Aborted.");
+        }
     }
 
     if (!bool_option(settings, "dns_detour_enabled", false))
@@ -2142,6 +2150,8 @@ else if (mode == "dhcp-has-https-dns-proxy-options")
     dhcp_has_https_dns_proxy_options_exit(ARGV[1]);
 else if (mode == "mwan3-has-enabled-interface")
     exit(mwan3_has_enabled_interface() ? 0 : 1);
+else if (mode == "mwan3-has-enabled-interface-from-sections")
+    exit(mwan3_has_enabled_interface_from_sections() ? 0 : 1);
 else if (mode == "mwan3-is-active")
     exit(mwan3_is_active() ? 0 : 1);
 else if (mode == "check-requirements")

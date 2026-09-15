@@ -14,6 +14,7 @@ const SYSTEM_INFO_CACHE_FILE = getenv("FORKOP_SYSTEM_INFO_CACHE_FILE") || RUNTIM
 const COMPONENT_LOCK_DIR = getenv("UPDATES_LOCK_DIR") || RUNTIME_STATE_DIR + "/component-action.lock";
 const TMP_STALE_TTL_MINUTES = getenv("UPDATES_TMP_STALE_TTL_MINUTES") || "30";
 const TMP_FILE_STALE_TTL_MINUTES = getenv("UPDATES_TMP_FILE_STALE_TTL_MINUTES") || "10";
+const TMP_DOWNLOAD_RESERVE_BYTES = int(getenv("UPDATES_TMP_DOWNLOAD_RESERVE_BYTES") || "33554432");
 const SB_MANAGED_SERVICE_MARKER = getenv("SB_MANAGED_SERVICE_MARKER") || constants.SB_MANAGED_SERVICE_MARKER || "Forkop managed sing-box service for binary variants";
 
 let tmp_dir = "";
@@ -108,6 +109,86 @@ function file_exists(path) {
 function file_nonempty(path) {
     let stat = fs.stat(as_string(path));
     return stat != null && int(stat.size || 0) > 0;
+}
+
+function filesystem_available_bytes(path) {
+    let output = command_output_from_args([ "df", "-P", "-k", as_string(path) ]);
+    let last = "";
+    for (let line in split(as_string(output), "\n")) {
+        line = trim(as_string(line));
+        if (line != "")
+            last = line;
+    }
+
+    if (last == "")
+        return -1;
+
+    let fields = split(last, /[ \t]+/);
+    if (length(fields) < 4 || match(as_string(fields[3]), /^[0-9]+$/) == null)
+        return -1;
+    return int(fields[3], 10) * 1024;
+}
+
+function mem_available_bytes() {
+    for (let line in split(read_file("/proc/meminfo"), "\n")) {
+        let matched = match(as_string(line), /^MemAvailable:[ \t]+([0-9]+)[ \t]+kB/);
+        if (matched != null)
+            return int(matched[1], 10) * 1024;
+    }
+    return -1;
+}
+
+function tmp_download_capacity_ok(asset_size, filesystem_available, memory_available, reserve_bytes) {
+    asset_size = int(asset_size || 0);
+    filesystem_available = int(filesystem_available);
+    memory_available = int(memory_available);
+    reserve_bytes = int(reserve_bytes || 0);
+
+    if (asset_size <= 0)
+        return true;
+    if (reserve_bytes < 0)
+        reserve_bytes = 0;
+
+    let required = asset_size + reserve_bytes;
+    if (filesystem_available >= 0 && filesystem_available < required)
+        return false;
+    if (memory_available >= 0 && memory_available < required)
+        return false;
+    return true;
+}
+
+function bytes_to_mib_ceil(value) {
+    value = int(value || 0);
+    return value <= 0 ? 0 : int((value + 1048575) / 1048576);
+}
+
+function ensure_tmp_download_capacity(asset_size, label) {
+    asset_size = int(asset_size || 0);
+    if (asset_size <= 0) {
+        updates_log("Release asset size is unavailable for " + as_string(label) + "; skipping tmpfs capacity preflight", "warn");
+        return true;
+    }
+
+    let target = tmp_dir != "" ? tmp_dir : "/tmp";
+    let filesystem_available = filesystem_available_bytes(target);
+    let memory_available = mem_available_bytes();
+    let reserve = TMP_DOWNLOAD_RESERVE_BYTES > 0 ? TMP_DOWNLOAD_RESERVE_BYTES : 0;
+
+    if (tmp_download_capacity_ok(asset_size, filesystem_available, memory_available, reserve))
+        return true;
+
+    let required = asset_size + reserve;
+    let fs_text = filesystem_available >= 0 ? as_string(bytes_to_mib_ceil(filesystem_available)) + " MiB" : "unknown";
+    let mem_text = memory_available >= 0 ? as_string(bytes_to_mib_ceil(memory_available)) + " MiB" : "unknown";
+    updates_log(
+        "Insufficient memory-backed /tmp capacity for " + as_string(label) +
+        ": need at least " + bytes_to_mib_ceil(required) + " MiB (" +
+        bytes_to_mib_ceil(asset_size) + " MiB asset + " +
+        bytes_to_mib_ceil(reserve) + " MiB reserve), /tmp available " +
+        fs_text + ", MemAvailable " + mem_text,
+        "error"
+    );
+    return false;
 }
 
 function path_basename(path) {
@@ -498,7 +579,7 @@ function http_get_once(url, output_path, proxy_address, timeout) {
     timeout = as_string(timeout || "30");
 
     if (command_exists("curl")) {
-        let args = [ "curl", "--connect-timeout", "5", "-m", timeout, "-fsSL" ];
+        let args = [ "curl", "--connect-timeout", "5", "--speed-limit", "1024", "--speed-time", "30", "-m", timeout, "-fsSL" ];
         if (proxy_address != "") {
             push(args, "-x");
             push(args, "http://" + proxy_address);
@@ -549,12 +630,12 @@ function http_get(url) {
 function download_file_once(url, output_path) {
     let proxy_address = service_proxy_address();
     if (proxy_address != "") {
-        if (http_get_once(url, output_path, proxy_address, "120"))
+        if (http_get_once(url, output_path, proxy_address, "600"))
             return true;
         remove_file(output_path);
         updates_log("Download via service proxy failed for " + as_string(url) + "; retrying directly", "warn");
     }
-    return http_get_once(url, output_path, "", "120");
+    return http_get_once(url, output_path, "", "600");
 }
 
 function download_with_retry(url, output_path, label) {
@@ -821,10 +902,6 @@ function extract_zapret_bundle_version(bundle_name) {
     return trim(helper_output("updates-zapret-bundle-version", [ bundle_name ]));
 }
 
-function extract_zapret2_bundle_version(bundle_name) {
-    return trim(helper_output("updates-zapret2-bundle-version", [ bundle_name ]));
-}
-
 function normalize_zapret_version(value) {
     return trim(helper_output("updates-normalize-zapret-version", [ value ]));
 }
@@ -854,20 +931,22 @@ function resolve_zapret_release(arch) {
 }
 
 function resolve_zapret2_release(arch) {
-    let releases_json = fetch_github_releases_json("remittor", "zapret-openwrt", "30");
-    if (releases_json == "")
+    let release_json = fetch_github_release_json("1andrevich", "zapret2-openwrt");
+    if (release_json == "")
         return null;
-    let resolved = trim(helper_output_input(releases_json, "named-release-select-asset", [ "zapret2 ", "zapret2", "zip", arch.candidates ]));
+    let asset_ext = is_apk() ? "apk" : "ipk";
+    let resolved = trim(helper_output_input(release_json, "release-select-arch-suffix-asset", [ asset_ext, arch.candidates ]));
     let fields = split(resolved, "\t");
-    if (length(fields) < 4)
+    if (length(fields) < 5)
         return null;
-    let version = extract_zapret2_bundle_version(fields[1]);
+    // The assets carry no version, only the release tag does.
+    let version = normalize_zapret_version(fields[4]);
     if (version == "")
-        version = trim(helper_output("string-remove-suffix", [ fields[1], ".zip" ]));
+        return null;
     return {
         arch: fields[0],
-        bundle_name: fields[1],
-        bundle_url: fields[2],
+        package_name: fields[1],
+        package_url: fields[2],
         release_url: fields[3],
         version
     };
@@ -892,7 +971,7 @@ function download_and_extract_zip_package(release, component) {
 
     let version = as_string(release.version || "");
     if (version == "")
-        version = component == "zapret2" ? extract_zapret2_bundle_version(release.bundle_name) : extract_zapret_bundle_version(release.bundle_name);
+        version = extract_zapret_bundle_version(release.bundle_name);
     if (version == "")
         version = extract_arch_package_version(package_name, release.arch);
 
@@ -901,6 +980,12 @@ function download_and_extract_zip_package(release, component) {
         file: package_file,
         version
     };
+}
+
+function download_zapret_bundle_package(release, component, action) {
+    if (!ensure_package_tool("unzip", "unzip", component, action))
+        action_fail(component, action, "Failed to install unzip");
+    return download_and_extract_zip_package(release, component);
 }
 
 function resolve_byedpi_release(arch) {
@@ -922,7 +1007,7 @@ function resolve_byedpi_release(arch) {
     };
 }
 
-function download_byedpi_package(release) {
+function download_release_package(release) {
     let package_file = tmp_dir + "/" + release.package_name;
     if (!download_with_retry(release.package_url, package_file, release.package_name) || !file_nonempty(package_file))
         return null;
@@ -952,7 +1037,7 @@ function provider_package_version(runtime_module) {
     return trim(module_output([ runtime_module, "package-version" ]));
 }
 
-function install_zapret_like(component, action, runtime_module, resolve_fn, label) {
+function install_zapret_like(component, action, runtime_module, resolve_fn, download_fn, label) {
     init_tmp_dir() || action_fail(component, action, "Failed to create temporary directory");
     let arch = resolve_arch_candidates();
     if (arch == null)
@@ -973,9 +1058,7 @@ function install_zapret_like(component, action, runtime_module, resolve_fn, labe
         check_success_compared(component, current_version, release.version, normalize_zapret_version(current_version), normalize_zapret_version(release.version), release.release_url || "");
     }
 
-    if (!ensure_package_tool("unzip", "unzip", component, action))
-        action_fail(component, action, "Failed to install unzip");
-    let pkg = download_and_extract_zip_package(release, component);
+    let pkg = download_fn(release, component, action);
     if (pkg == null)
         action_fail(component, action, "Failed to download " + label + " package", current_version, release.version, "", release.release_url || "");
 
@@ -992,11 +1075,11 @@ function install_zapret_like(component, action, runtime_module, resolve_fn, labe
 }
 
 function install_zapret(action) {
-    install_zapret_like("zapret", action, LIB_DIR + "/providers/zapret/runtime.uc", resolve_zapret_release, "zapret");
+    install_zapret_like("zapret", action, LIB_DIR + "/providers/zapret/runtime.uc", resolve_zapret_release, download_zapret_bundle_package, "zapret");
 }
 
 function install_zapret2(action) {
-    install_zapret_like("zapret2", action, LIB_DIR + "/providers/zapret2/runtime.uc", resolve_zapret2_release, "zapret2");
+    install_zapret_like("zapret2", action, LIB_DIR + "/providers/zapret2/runtime.uc", resolve_zapret2_release, download_release_package, "zapret2");
 }
 
 function install_byedpi(action) {
@@ -1021,7 +1104,7 @@ function install_byedpi(action) {
         check_success("byedpi", current_version, release.version, release.release_url || "");
     }
 
-    let pkg = download_byedpi_package(release);
+    let pkg = download_release_package(release);
     if (pkg == null)
         action_fail("byedpi", action, "Failed to download ByeDPI package");
     if (!run_logged("Installing ByeDPI package " + pkg.name, pkg_install_files_command([ pkg.file ])))
@@ -1170,11 +1253,18 @@ function set_sing_box_extended_release_from_json(release_json, compressed) {
     if (asset_url == "")
         return null;
 
+    let asset_size = int(trim(helper_output_input(
+        release_json,
+        "release-asset-size-by-url",
+        [ asset_url ]
+    )) || "0");
+
     return {
         tag,
         release_url: trim(helper_output_input(release_json, "object-get-default", [ "html_url", "" ])),
         asset_url,
-        asset_name: path_basename(asset_url)
+        asset_name: path_basename(asset_url),
+        asset_size
     };
 }
 
@@ -1224,6 +1314,8 @@ function restore_sing_box_extended_package_variant() {
     init_tmp_dir();
     let release = resolve_sing_box_extended_release(false);
     if (release == null)
+        return false;
+    if (!ensure_tmp_download_capacity(release.asset_size, release.asset_name))
         return false;
     let package_file = tmp_dir + "/" + release.asset_name;
     if (!download_with_retry(release.asset_url, package_file, release.asset_name))
@@ -1378,6 +1470,9 @@ function install_sing_box_extended_package(action) {
             action_fail("sing_box", action, "sing-box-extended is not installed", current_version, latest_version);
         check_success("sing_box", normalize_sing_box_version(current_version), normalize_sing_box_version(latest_version), release.release_url);
     }
+
+    if (!ensure_tmp_download_capacity(release.asset_size, release.asset_name))
+        action_fail("sing_box", action, "Not enough available RAM/tmpfs to safely download sing-box-extended package", current_version, latest_version);
 
     let package_file = tmp_dir + "/" + release.asset_name;
     if (!download_with_retry(release.asset_url, package_file, release.asset_name))
@@ -1889,7 +1984,9 @@ else if (mode == "latest-forkop-version")
     print(latest_forkop_version(), "\n");
 else if (mode == "forkop-release-metadata")
     print(fetch_forkop_latest_release_metadata(), "\n");
+else if (mode == "tmp-download-capacity-fixture")
+    exit(tmp_download_capacity_ok(ARGV[1], ARGV[2], ARGV[3], ARGV[4]) ? 0 : 1);
 else {
-    warn("Usage: components/action.uc <component-action|latest-forkop-version|forkop-release-metadata> ...\n");
+    warn("Usage: components/action.uc <component-action|latest-forkop-version|forkop-release-metadata|tmp-download-capacity-fixture> ...\n");
     exit(1);
 }

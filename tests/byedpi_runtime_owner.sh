@@ -85,4 +85,37 @@ if (value.byedpi_installed !== false || value.byedpi_package_installed !== false
 }
 '
 
+supervisor_command="$(
+  FORKOP_LIB="$FORKOP_LIB" \
+  BYEDPI_BIN="/usr/bin/ciadpi" \
+  BYEDPI_RUNTIME_USER="forkopbyedpi" \
+  BYEDPI_RUNTIME_GROUP="forkopbyedpi" \
+  ucode -L "$FORKOP_LIB" -- "$BYEDPI_RUNTIME_UC" supervisor-command \
+    1080 '-o 1' /tmp/forkop-byedpi-child.pid
+)"
+
+grep -Fq '"--",' "$BYEDPI_RUNTIME_UC" ||
+  fail "Forkop-managed supervisor launch must protect dash-prefixed strategy arguments with ucode --"
+
+case "$supervisor_command" in
+  *start-stop-daemon*) ;;
+  *) fail "Forkop-managed ciadpi must start through start-stop-daemon" ;;
+esac
+case "$supervisor_command" in
+  *forkopbyedpi:forkopbyedpi*) ;;
+  *) fail "Forkop-managed ciadpi must run under the dedicated user/group" ;;
+esac
+case "$supervisor_command" in
+  */usr/bin/ciadpi*) ;;
+  *) fail "Forkop-managed runtime must execute ciadpi" ;;
+esac
+case "$supervisor_command" in
+  *127.0.0.1*1080*) ;;
+  *) fail "Forkop-managed ciadpi listen address/port mismatch" ;;
+esac
+case "$supervisor_command" in
+  *"-o"*"1"*) ;;
+  *) fail "ByeDPI strategy arguments must survive privilege dropping" ;;
+esac
+
 printf 'ByeDPI runtime ownership checks passed\n'
