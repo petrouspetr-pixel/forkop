@@ -1403,8 +1403,8 @@ function latency_clash_method(latency_type) {
     if (latency_type == "group")
         return { method: "get_group_latency", timeout: "10000" };
     if (latency_type == "proxy_list")
-        return { method: "get_proxy_latencies", timeout: "5000" };
-    return { method: "get_proxy_latency", timeout: "5000" };
+        return { method: "get_proxy_latencies", timeout: "10000" };
+    return { method: "get_proxy_latency", timeout: "10000" };
 }
 
 function latency_worker(path, latency_type, tag, timeout) {

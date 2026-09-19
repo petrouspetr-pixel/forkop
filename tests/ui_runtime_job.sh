@@ -81,6 +81,12 @@ if grep -n -E 'pgrep.*sing-box|service-list-instance-running' "$UI_UC" >/dev/nul
   fail "service/ui.uc must not use transient sing-box process probes for visible status"
 fi
 
+latency_clash_method="$(sed -n '/^function latency_clash_method(/,/^}/p' "$UI_UC")"
+printf '%s\n' "$latency_clash_method" | grep -Fq 'return { method: "get_proxy_latencies", timeout: "10000" };' ||
+  fail "proxy_list latency checks must default to a 10000 ms timeout"
+printf '%s\n' "$latency_clash_method" | grep -Fq 'return { method: "get_proxy_latency", timeout: "10000" };' ||
+  fail "proxy latency checks must default to a 10000 ms timeout"
+
 for mode in \
   get-ui-capabilities \
   get-ui-state \
