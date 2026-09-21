@@ -3217,6 +3217,8 @@ function hydrateConfigSections(configSections) {
         );
         settings[groupId] = {
           name: item.name,
+          implementation: item.implementation,
+          blacklist_timeout: item.blacklist_timeout,
           health_url: item.health_url,
           active_check_interval: item.active_check_interval,
           check_timeout: item.check_timeout,
@@ -3499,6 +3501,7 @@ function getPriorityConfigs(section) {
       id,
       code: getPriorityTag(sectionName, id),
       displayName: itemSettingString(settings, "name", id),
+      implementation: itemSettingString(settings, "implementation", "watchdog") === "native_fallback" ? "native_fallback" : "watchdog",
       settings,
       pinDashboard: itemSettingBoolean(settings, "pin_dashboard", true),
       healthUrl: itemSettingString(
@@ -3512,6 +3515,7 @@ function getPriorityConfigs(section) {
         "5s"
       ),
       checkTimeout: itemSettingString(settings, "check_timeout", "2s"),
+      blacklistTimeout: itemSettingString(settings, "blacklist_timeout", "1m"),
       recoveryCheckInterval: itemSettingString(
         settings,
         "recovery_check_interval",
@@ -3705,11 +3709,13 @@ function buildPriorityInfo({
   return {
     code: config.code,
     displayName: groupCache?.displayName || config.displayName,
+    implementation: groupCache?.implementation || config.implementation,
     selectedCode: selectedCode || void 0,
     selectedName: selectedName || void 0,
     healthUrl: groupCache?.health_url || config.healthUrl,
     activeCheckInterval: groupCache?.active_check_interval || config.activeCheckInterval,
     checkTimeout: groupCache?.check_timeout || config.checkTimeout,
+    blacklistTimeout: groupCache?.blacklist_timeout || config.blacklistTimeout,
     recoveryCheckInterval: groupCache?.recovery_check_interval || config.recoveryCheckInterval,
     pickFastest: groupCache?.pick_fastest ?? config.pickFastest,
     switchToFasterSamePriority: groupCache?.switch_to_faster_same_priority ?? config.switchToFasterSamePriority,
@@ -6313,34 +6319,48 @@ function renderPriorityInfoModal(outbound) {
       label: _("Selected"),
       children: [renderPrioritySelectedValue(info)]
     },
-    { label: _("Check URL"), children: [renderDetailsUrl(info.healthUrl)] },
-    {
-      label: _("Check interval"),
-      value: info.activeCheckInterval
-    },
-    { label: _("Unavailability timeout"), value: info.checkTimeout },
-    {
-      label: _("Higher-level check interval"),
-      value: info.recoveryCheckInterval
-    },
-    {
-      label: _("Select the fastest node"),
-      value: info.pickFastest
-    },
-    {
-      label: _("Automatically select the fastest node in the current level"),
-      value: info.switchToFasterSamePriority
-    },
-    ...info.switchToFasterSamePriority ? [
+    ...info.implementation === "native_fallback" ? [
       {
-        label: _("Faster server search interval"),
-        value: info.fastestCheckInterval
+        label: _("Failed server retry interval"),
+        value: info.blacklistTimeout
       }
-    ] : [],
-    {
-      label: _("Interrupt connections"),
-      value: info.interruptExistConnections
-    }
+    ] : [
+      {
+        label: _("Check URL"),
+        children: [renderDetailsUrl(info.healthUrl)]
+      },
+      {
+        label: _("Check interval"),
+        value: info.activeCheckInterval
+      },
+      { label: _("Unavailability timeout"), value: info.checkTimeout },
+      {
+        label: _("Higher-level check interval"),
+        value: info.recoveryCheckInterval
+      },
+      {
+        label: _("Select the fastest node"),
+        value: info.pickFastest
+      },
+      {
+        label: _(
+          "Automatically select the fastest node in the current level"
+        ),
+        value: info.switchToFasterSamePriority
+      },
+      ...info.switchToFasterSamePriority ? [
+        {
+          label: _("Faster server search interval"),
+          value: info.fastestCheckInterval
+        }
+      ] : []
+    ],
+    ...info.implementation === "watchdog" ? [
+      {
+        label: _("Interrupt connections"),
+        value: info.interruptExistConnections
+      }
+    ] : []
   ];
   return E("div", { class: "fkp_dashboard-page__urltest-details" }, [
     E(
