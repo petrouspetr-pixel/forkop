@@ -21,6 +21,7 @@ let tmp_dir = "";
 let lock_held = false;
 let trafira_was_running = false;
 let trafira_stopped_for_sing_box_change = false;
+let install_failure_detail = "";
 
 function as_string(value) {
     return value == null ? "" : "" + value;
@@ -136,6 +137,64 @@ function mem_available_bytes() {
             return int(matched[1], 10) * 1024;
     }
     return -1;
+}
+
+// Minimum free-space guard, not an estimate of expanded packages or dependencies.
+// Never credit bytes from removing the previous variant: rollback must retain it.
+function install_storage_required_bytes(component, staged_bytes, action) {
+    let minimum = component == "sing_box" && action != "install_tiny" ? 33554432 : 8388608;
+    let staged = int(staged_bytes || 0) + 4194304;
+    return staged > minimum ? staged : minimum;
+}
+
+function install_storage_error(path, available, required) {
+    if (available < 0)
+        return "Cannot determine free disk space on " + path + "; installation stopped before proceeding";
+    if (available >= required)
+        return "";
+    return "Insufficient free disk space on " + path + ": " + int(available / 1048576) +
+        " MiB available; at least " + int((required + 1048575) / 1048576) +
+        " MiB required as a safety minimum. Free disk space and retry; installation stopped before proceeding";
+}
+
+function ensure_install_storage(component, action, staged_bytes) {
+    let path = file_exists("/overlay") ? "/overlay" : "/";
+    let storage_action = action;
+    if (component == "sing_box" && action == "install" && sing_box_runtime_output("variant", []) == "tiny")
+        storage_action = "install_tiny";
+    let required = install_storage_required_bytes(component, staged_bytes, storage_action);
+    let message = install_storage_error(path, filesystem_available_bytes(path), required);
+    if (message != "")
+        action_fail(component, action, message);
+    // Component destinations can be separate filesystems.
+    for (let target in [ "/usr/bin", "/usr/lib", "/etc", "/opt" ]) {
+        if (target == "/opt" && ((component != "zapret" && component != "zapret2" && component != "byedpi") || !file_exists(target)))
+            continue;
+        message = install_storage_error(target, filesystem_available_bytes(target), required);
+        if (message != "")
+            action_fail(component, action, message);
+    }
+}
+
+function staged_install_bytes(binary, library) {
+    let binary_stat = fs.stat(binary);
+    let library_stat = library != "" ? fs.stat(library) : null;
+    return int(binary_stat != null ? binary_stat.size : 0) +
+        int(library_stat != null ? library_stat.size : 0);
+}
+
+// Return fixed, bounded diagnostics only; command output can contain credentials.
+function package_install_error_detail(output) {
+    output = as_string(output);
+    if (match(output, /[Nn]o space left on device|ENOSPC|[Nn]ot enough space|[Ii]nsufficient space/) != null)
+        return "No space left on device (ENOSPC). Free space on the installation filesystem and retry";
+    if (match(output, /unable to select packages|unresolved dependencies|unsatisfiable|breaks: world|[Cc]annot satisfy|[Cc]onflicts with|[Cc]onflicting dependencies/) != null)
+        return "Package dependencies or the package manager world state could not be resolved; check the package manager log";
+    return "";
+}
+
+function package_failure_message(message) {
+    return install_failure_detail == "" ? message : message + ": " + install_failure_detail;
 }
 
 function tmp_download_capacity_ok(asset_size, filesystem_available, memory_available, reserve_bytes) {
@@ -389,7 +448,7 @@ function action_fail(component, action, message, current_version, latest_version
     exit(1);
 }
 
-function run_logged(description, command) {
+function run_logged(description, command, capture_install_error) {
     init_tmp_dir();
     let output_file = make_tmp_file("command");
     if (output_file == "")
@@ -397,6 +456,10 @@ function run_logged(description, command) {
 
     updates_log(description);
     let status = command_status(as_string(command) + " >" + shell_quote(output_file) + " 2>&1");
+    if (status == 0 && capture_install_error)
+        install_failure_detail = "";
+    if (status != 0 && capture_install_error && install_failure_detail == "")
+        install_failure_detail = package_install_error_detail(read_file(output_file));
     for (let line in split(read_file(output_file), "\n"))
         if (trim(as_string(line)) != "")
             updates_log(line);
@@ -404,6 +467,10 @@ function run_logged(description, command) {
     if (status != 0)
         updates_log(description + " failed with exit code " + status, "warn");
     return status == 0;
+}
+
+function run_logged_install(description, command) {
+    return run_logged(description, command, true);
 }
 
 function is_apk() {
@@ -455,12 +522,12 @@ function pkg_install_name_downgrade(package_name, package_version) {
             return false;
         let package_spec = package_name + "=" + package_version;
         if (pkg_is_installed(package_name))
-            return command_success(command_from_args([ "apk", "fix", "--reinstall", "--upgrade", package_spec ]) + " </dev/null");
-        return command_success(command_from_args([ "apk", "add", package_spec ]) + " </dev/null");
+            return run_logged_install("Reinstalling " + package_name, command_from_args([ "apk", "fix", "--reinstall", "--upgrade", package_spec ]) + " </dev/null");
+        return run_logged_install("Installing " + package_name, command_from_args([ "apk", "add", package_spec ]) + " </dev/null");
     }
 
-    return command_success(command_from_args([ "opkg", "install", "--force-overwrite", "--force-reinstall", "--force-downgrade", package_name ]) + " </dev/null") ||
-        command_success(command_from_args([ "opkg", "install", "--force-downgrade", package_name ]) + " </dev/null");
+    return run_logged_install("Installing " + package_name, command_from_args([ "opkg", "install", "--force-overwrite", "--force-reinstall", "--force-downgrade", package_name ]) + " </dev/null") ||
+        run_logged_install("Retrying installation of " + package_name, command_from_args([ "opkg", "install", "--force-downgrade", package_name ]) + " </dev/null");
 }
 
 function pkg_install_files_command(files) {
@@ -705,7 +772,7 @@ function ensure_package_tool(tool_name, package_name, component, action) {
         return true;
     if (!run_logged("Updating package lists before installing " + as_string(package_name), pkg_list_update_command()))
         return false;
-    return run_logged("Installing bootstrap package " + as_string(package_name), pkg_install_name_command(package_name));
+    return run_logged_install("Installing bootstrap package " + as_string(package_name), pkg_install_name_command(package_name));
 }
 
 function clear_version_caches() {
@@ -984,7 +1051,7 @@ function download_and_extract_zip_package(release, component) {
 
 function download_zapret_bundle_package(release, component, action) {
     if (!ensure_package_tool("unzip", "unzip", component, action))
-        action_fail(component, action, "Failed to install unzip");
+        action_fail(component, action, package_failure_message("Failed to install unzip"));
     return download_and_extract_zip_package(release, component);
 }
 
@@ -1062,8 +1129,8 @@ function install_zapret_like(component, action, runtime_module, resolve_fn, down
     if (pkg == null)
         action_fail(component, action, "Failed to download " + label + " package", current_version, release.version, "", release.release_url || "");
 
-    if (!run_logged("Installing " + label + " package " + pkg.name, pkg_install_files_command([ pkg.file ])))
-        action_fail(component, action, "Failed to install " + label + " package", current_version, pkg.version, "", release.release_url || "");
+    if (!run_logged_install("Installing " + label + " package " + pkg.name, pkg_install_files_command([ pkg.file ])))
+        action_fail(component, action, package_failure_message("Failed to install " + label + " package"), current_version, pkg.version, "", release.release_url || "");
 
     disable_standalone_service(component);
     restart_trafira_after_successful_change();
@@ -1107,8 +1174,8 @@ function install_byedpi(action) {
     let pkg = download_release_package(release);
     if (pkg == null)
         action_fail("byedpi", action, "Failed to download ByeDPI package");
-    if (!run_logged("Installing ByeDPI package " + pkg.name, pkg_install_files_command([ pkg.file ])))
-        action_fail("byedpi", action, "Failed to install ByeDPI package", current_version, pkg.version);
+    if (!run_logged_install("Installing ByeDPI package " + pkg.name, pkg_install_files_command([ pkg.file ])))
+        action_fail("byedpi", action, package_failure_message("Failed to install ByeDPI package"), current_version, pkg.version);
 
     disable_standalone_service("byedpi");
     restart_trafira_after_successful_change();
@@ -1438,6 +1505,7 @@ function restore_sing_box_after_failed_package_install(target_package, previous_
 
 function fail_package_sing_box_install(action, tiny, reason, current_version, latest_version,
     target_package, previous_variant, backup_binary, backup_cronet, previous_marker, previous_version_state, cronet_touched) {
+    reason = package_failure_message(reason);
     let restored = restore_sing_box_after_failed_package_install(
         target_package,
         previous_variant,
@@ -1528,9 +1596,10 @@ function install_sing_box_extended_package(action) {
         }
     }
 
-    if (!run_logged("Installing sing-box-extended package " + release.asset_name, pkg_install_files_command([ package_file ]))) {
+    if (!run_logged_install("Installing sing-box-extended package " + release.asset_name, pkg_install_files_command([ package_file ]))) {
+        let install_error = package_failure_message("Failed to install sing-box-extended package");
         restore_sing_box_after_failed_extended_package_install(current_variant, backup_binary, backup_cronet, previous_marker, previous_version_state, package_file, cronet_touched);
-        action_fail("sing_box", action, "Failed to install sing-box-extended package", current_version, latest_version);
+        action_fail("sing_box", action, install_error, current_version, latest_version);
     }
     remove_file(package_file);
 
@@ -1627,6 +1696,7 @@ function install_sing_box_extended(action, compressed) {
     }
 
     remove_file(archive_file);
+    ensure_install_storage("sing_box", action, staged_install_bytes(tmp_binary, tmp_cronet));
     stop_trafira_before_sing_box_change();
     let new_version = validate_sing_box_extended_binary(tmp_binary, tmp_dir);
     if (new_version == "") {
@@ -1880,12 +1950,12 @@ function install_trafira() {
         (release.i18n_url != "" && !download_with_retry(release.i18n_url, i18n_file, release.i18n_name)))
         action_fail("trafira", "install", "Failed to download Trafira release packages", TRAFIRA_VERSION, latest_version);
 
-    if (!run_logged("Installing LuCI app package " + release.app_name, pkg_install_files_command([ app_file ])))
-        action_fail("trafira", "install", "Failed to install LuCI app package", TRAFIRA_VERSION, latest_version);
-    if (i18n_file != "" && !run_logged("Installing LuCI Russian i18n package " + release.i18n_name, pkg_install_files_command([ i18n_file ])))
-        action_fail("trafira", "install", "Failed to install LuCI Russian i18n package", TRAFIRA_VERSION, latest_version);
-    if (!run_logged("Installing Trafira package " + release.backend_name, pkg_install_files_command([ backend_file ])))
-        action_fail("trafira", "install", "Failed to install Trafira package", TRAFIRA_VERSION, latest_version);
+    if (!run_logged_install("Installing LuCI app package " + release.app_name, pkg_install_files_command([ app_file ])))
+        action_fail("trafira", "install", package_failure_message("Failed to install LuCI app package"), TRAFIRA_VERSION, latest_version);
+    if (i18n_file != "" && !run_logged_install("Installing LuCI Russian i18n package " + release.i18n_name, pkg_install_files_command([ i18n_file ])))
+        action_fail("trafira", "install", package_failure_message("Failed to install LuCI Russian i18n package"), TRAFIRA_VERSION, latest_version);
+    if (!run_logged_install("Installing Trafira package " + release.backend_name, pkg_install_files_command([ backend_file ])))
+        action_fail("trafira", "install", package_failure_message("Failed to install Trafira package"), TRAFIRA_VERSION, latest_version);
 
     remove_file("/var/luci-indexcache");
     command_success("rm -f /var/luci-indexcache* /tmp/luci-indexcache* 2>/dev/null");
@@ -1948,6 +2018,12 @@ function component_action(component, action) {
         action_fail(component != "" ? component : "unknown", action != "" ? action : "unknown", "Another component action is already running");
     if (!init_tmp_dir())
         action_fail(component != "" ? component : "unknown", action != "" ? action : "unknown", "Failed to create temporary directory");
+    if ((component == "trafira" || component == "sing_box" || component == "zapret" ||
+        component == "zapret2" || component == "byedpi") &&
+        (action == "install" || (component == "sing_box" &&
+        (action == "install_extended" || action == "install_extended_compressed" ||
+        action == "install_tiny" || action == "install_stable"))))
+        ensure_install_storage(component, action, 0);
     capture_trafira_running_state();
 
     if (component == "trafira" && action == "check_update")

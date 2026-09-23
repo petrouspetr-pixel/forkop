@@ -1741,6 +1741,10 @@ function launch_component_worker(args) {
 
 function component_action_worker(state_file, output_file, component, action) {
     component = normalize_component_name(component);
+    // Only the worker writes its PID: the parent can resume after a fast
+    // preflight failure and must never overwrite the completed result.
+    if (!set_component_running_job_pid(state_file, owner_pid()))
+        exit(1);
     let command = command_env(component_worker_env()) + " " +
         command_from_args([
             "ucode",
@@ -1785,10 +1789,8 @@ function component_action_async(component, action) {
         as_string(action)
     ]);
 
-    if (pid == "" || !set_component_running_job_pid(state_file, pid)) {
-        if (pid != "")
-            command_success_from_args([ "kill", pid ]);
-        component_job_json_response(false, "", "Failed to write component action worker pid");
+    if (!job_pid_valid(pid)) {
+        component_job_json_response(false, "", "Failed to start component action worker");
         exit(1);
     }
 

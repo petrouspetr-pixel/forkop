@@ -244,6 +244,7 @@ function extractBackend(repo, fields) {
 
   const shellOptionRe = /\bconfig_(?:get|get_bool|list_foreach)\s+\S+\s+(?:"[^"]+"|'[^']+'|\$[A-Za-z_][A-Za-z0-9_]*|\$\{[^}]+\})\s+["']([A-Za-z0-9_]+)["']/g;
   const ucodeOptionRe = /\b(?:option|list_option|bool_option|int_option)\(\s*[^,\n]+,\s*["']([A-Za-z0-9_]+)["']/g;
+  const childValuesFallbackRe = /\bchild_values\(\s*[^,\n]+,\s*["'][^"']+["'],\s*["'][^"']+["'],\s*["']([A-Za-z0-9_]+)["']/g;
   const ucodeStaticOptionKeyArrayRe = /^\s*\[\s*["']([A-Za-z0-9_]+)["']\s*,/gm;
   const migrationRe = new RegExp(`\\b(?:trafira|forkop|${legacyStem})_uci_(?:set_option|set_option_if_missing|delete_option|add_list_unique)\\s+["'$A-Za-z0-9_{}.-]+\\s+["']([A-Za-z0-9_]+)["']`, "g");
   const ucodeMigrationRe = /\b(?:set_option|set_option_if_missing|delete_option|add_list_unique)\(\s*[^,\n]+,\s*[^,\n]+,\s*["']([A-Za-z0-9_]+)["']/g;
@@ -255,6 +256,9 @@ function extractBackend(repo, fields) {
       addUnique(ensure(fields, match[1]).backend, rel(repo, file));
     }
     for (const match of backendScanData.matchAll(ucodeOptionRe)) {
+      addUnique(ensure(fields, match[1]).backend, rel(repo, file));
+    }
+    for (const match of backendScanData.matchAll(childValuesFallbackRe)) {
       addUnique(ensure(fields, match[1]).backend, rel(repo, file));
     }
     if (backendScanData.includes("option(server, field[0]")) {

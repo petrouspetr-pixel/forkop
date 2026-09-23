@@ -96,6 +96,8 @@ updates_ucode() {
     ucode -L "$fake_lib" -L "$TRAFIRA_LIB" "$UPDATES_UC" "$@"
 }
 
+# The async launcher creates running state before starting its worker.
+printf '{"running":true}\n' >"$state_file"
 updates_ucode component-action-worker "$state_file" "$output_file" zapret check_update
 [ -s "$cache_dir/zapret.json" ] ||
   fail "manual checks must be cached while automatic checks are enabled"
@@ -110,6 +112,7 @@ if (!value.enabled || value.results.length !== 1 ||
 ' "$manual_cache" || fail "cached manual check response is invalid"
 
 rm -rf "$cache_dir"
+printf '{"running":true}\n' >"$state_file"
 TEST_COMPONENT_UPDATE_CHECK_ENABLED=0 updates_ucode \
   component-action-worker "$state_file" "$output_file" zapret check_update
 [ ! -e "$cache_dir/zapret.json" ] ||

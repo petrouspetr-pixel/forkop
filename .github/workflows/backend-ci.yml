@@ -6,6 +6,7 @@ on:
       - 'trafira/files/**'
       - 'trafira/Makefile'
       - 'build.sh'
+      - 'install.sh'
       - 'tests/**'
       - '.github/workflows/build.yml'
       - '.github/workflows/backend-ci.yml'
@@ -16,6 +17,7 @@ on:
       - 'trafira/files/**'
       - 'trafira/Makefile'
       - 'build.sh'
+      - 'install.sh'
       - 'tests/**'
       - '.github/workflows/build.yml'
       - '.github/workflows/backend-ci.yml'
@@ -56,4 +58,4 @@ jobs:
       - name: Run backend tests
         shell: bash
         run: |
-          printf '%s\0' tests/*.sh | xargs -0 -n1 -P4 bash
+          printf '%s\0' tests/*.sh | xargs -0 -n1 -P4 bash -c 'bash "$1" || { status=$?; echo "FAILED: $1 (exit $status)" >&2; exit "$status"; }' _

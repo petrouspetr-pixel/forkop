@@ -141,12 +141,13 @@ assert_eq "extracted payload" "$(cat "$command_success_output")" \
   "component command success preserves explicit output redirection"
 
 awk '
-prev2 == "    remove_file(archive_file);" &&
+prev3 == "    remove_file(archive_file);" &&
+prev2 == "    ensure_install_storage(\"sing_box\", action, staged_install_bytes(tmp_binary, tmp_cronet));" &&
 prev1 == "    stop_trafira_before_sing_box_change();" &&
 $0 == "    let new_version = validate_sing_box_extended_binary(tmp_binary, tmp_dir);" {
   safe_validation = 1
 }
-{ prev2 = prev1; prev1 = $0 }
+{ prev3 = prev2; prev2 = prev1; prev1 = $0 }
 END { exit safe_validation ? 0 : 1 }
 ' "$ACTION_UC" ||
   fail "compressed sing-box validation must release the archive and stop the running service to avoid OpenWrt OOM"
