@@ -54,11 +54,16 @@ const NFT_FAKEIP_MARK = getenv("NFT_FAKEIP_MARK") || "0x04000000";
 const SB_SERVICE_MIXED_INBOUND_ADDRESS = getenv("SB_SERVICE_MIXED_INBOUND_ADDRESS") || "127.0.0.1";
 const SB_SERVICE_MIXED_INBOUND_PORT = getenv("SB_SERVICE_MIXED_INBOUND_PORT") || "4534";
 const SB_VARIANT_STATE_FILE = getenv("SB_VARIANT_STATE_FILE") || "/etc/trafira/sing-box-variant";
-let community_subnets = require("routing.community");
-const BUILTIN_SUBNET_URLS = community_subnets.urls;
+let community_subnets = null;
 let rule_config = null;
 let routing_rulesets_module_value = null;
 let singbox_rulesets_module_value = null;
+
+function community_subnets_module() {
+    if (community_subnets == null)
+        community_subnets = require("routing.community");
+    return community_subnets;
+}
 
 function routing_rulesets_module() {
     if (routing_rulesets_module_value == null)
@@ -2112,11 +2117,11 @@ function import_builtin_subnets_from_rule(section, settings) {
         if (!singbox_rulesets_module().is_community(service))
             continue;
 
-        let urls = BUILTIN_SUBNET_URLS[as_string(service)];
+        let urls = community_subnets_module().urls[as_string(service)];
         if (type(urls) != "array")
             continue;
 
-        for (let entry in community_subnets.entries(as_string(service), TMP_RULESET_FOLDER)) {
+        for (let entry in community_subnets_module().entries(as_string(service), TMP_RULESET_FOLDER)) {
             let url = entry.url;
             let tmpfile = temp_path();
             if (tmpfile == "") {
@@ -2132,7 +2137,7 @@ function import_builtin_subnets_from_rule(section, settings) {
             }
 
             ensure_dir(TMP_RULESET_FOLDER);
-            if (!community_subnets.publish(entry, tmpfile, tmpfile)) {
+            if (!community_subnets_module().publish(entry, tmpfile, tmpfile)) {
                 log_message("Failed to publish built-in " + as_string(service) + " subnet rules; keeping previous rules", "error");
                 ok = false;
                 remove_file(tmpfile);
@@ -2864,7 +2869,7 @@ function fixture_subscription_update_section_due_status(path, section_name_value
 }
 
 function print_builtin_subnet_urls(service) {
-    for (let url in array_or_empty(BUILTIN_SUBNET_URLS[as_string(service)]))
+    for (let url in array_or_empty(community_subnets_module().urls[as_string(service)]))
         print(url, "\n");
 }
 

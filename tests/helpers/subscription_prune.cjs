@@ -9,8 +9,8 @@ const source = fs.readFileSync(path.join(library, 'singbox/prune.uc'), 'utf8');
 let implementation;
 if (process.argv.includes('--ucode')) {
   implementation = input => {
-    const script = 'let p=require("singbox.prune"); let fs=require("fs"); let i=json(fs.readfile("/dev/stdin")); let removed=p.prune_config(i.config,i.sources); p.prune_state(i.state,removed); print(sprintf("%J",i));';
-    const run = spawnSync('ucode', ['-L', library, '-e', script], { input: JSON.stringify(input), encoding: 'utf8' });
+    const script = 'let p=require("singbox.prune"); let i=json(getenv("TEST_PRUNE_INPUT")); let removed=p.prune_config(i.config,i.sources); p.prune_state(i.state,removed); print(sprintf("%J",i));';
+    const run = spawnSync('ucode', ['-L', library, '-e', script], { env: { ...process.env, TEST_PRUNE_INPUT: JSON.stringify(input) }, encoding: 'utf8' });
     assert.equal(run.status, 0, run.stderr || String(run.error));
     return JSON.parse(run.stdout);
   };
