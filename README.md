@@ -94,7 +94,7 @@ logread -e trafira
 
 ### Источник обновлений
 
-Вкладка обновлений LuCI и установщик используют [релизы petrouspetr-pixel/trafira](https://github.com/petrouspetr-pixel/trafira/releases). Релизы исходного Forkop не являются источником обновлений Trafira. Сторонние компоненты (sing-box, Zapret и другие) обновляются из своих репозиториев.
+Вкладка обновлений LuCI и установщик используют [релизы petrouspetr-pixel/trafira](https://github.com/petrouspetr-pixel/trafira/releases). Сторонние компоненты (sing-box, Zapret и другие) обновляются из своих репозиториев.
 
 Сборка пакетов описана в [build.sh](build.sh) и [workflow сборки](.github/workflows/build.yml). Возможности зависят от установленной версии sing-box и дополнительных компонентов.
 
