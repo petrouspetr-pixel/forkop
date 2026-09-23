@@ -5265,7 +5265,12 @@ var SocketManager = class _SocketManager {
     if (ws) ws.close();
   }
   disconnectAll() {
-    for (const url of this.sockets.keys()) {
+    const urls = /* @__PURE__ */ new Set([
+      ...this.sockets.keys(),
+      ...this.listeners.keys(),
+      ...this.reconnectTimers.keys()
+    ]);
+    for (const url of urls) {
       this.disconnect(url);
     }
   }

@@ -23,8 +23,15 @@ ensure_stable_ref() {
     return 0
   fi
 
-  git -C "$ROOT_DIR" fetch --force --depth=1 origin "refs/tags/$STABLE_REF:refs/tags/$STABLE_REF" >/dev/null 2>&1 ||
-    fail "stable ref is unavailable and could not be fetched: $STABLE_REF"
+  if git -C "$ROOT_DIR" fetch --force --depth=1 origin "refs/tags/$STABLE_REF:refs/tags/$STABLE_REF" >/dev/null 2>&1; then
+    return 0
+  fi
+
+  # Forks may not publish historical tags. Keep the same baseline by fetching
+  # its tag from the canonical repository instead of skipping the contract.
+  git -C "$ROOT_DIR" fetch --force --depth=1 https://github.com/ushan0v/forkop.git \
+    "refs/tags/$STABLE_REF:refs/tags/$STABLE_REF" >/dev/null 2>&1 ||
+    fail "stable ref is unavailable from origin and the canonical repository: $STABLE_REF"
 }
 
 prepare_stable_repo() {
