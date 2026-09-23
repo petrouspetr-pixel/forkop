@@ -2,8 +2,8 @@
 set -eo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-SERVER_RUNTIME="$ROOT_DIR/forkop/files/usr/lib/server/service.uc"
-UCODE_LIB="$ROOT_DIR/forkop/files/usr/lib"
+SERVER_RUNTIME="$ROOT_DIR/trafira/files/usr/lib/server/service.uc"
+UCODE_LIB="$ROOT_DIR/trafira/files/usr/lib"
 WORK_DIR="$(mktemp -d)"
 STATE="$WORK_DIR/uci.state"
 LOG="$WORK_DIR/uci.log"
@@ -59,39 +59,39 @@ LOGGER
 chmod 0755 "$WORK_DIR/bin/logger"
 
 export PATH="$WORK_DIR/bin:$PATH"
-export FORKOP_UCI_STATE_FILE="$STATE"
-export FORKOP_UCI_LOG_FILE="$LOG"
-export FORKOP_CONFIG_NAME="forkop"
-export FORKOP_SERVER_RUNTIME_UC="$SERVER_RUNTIME"
+export TRAFIRA_UCI_STATE_FILE="$STATE"
+export TRAFIRA_UCI_LOG_FILE="$LOG"
+export TRAFIRA_CONFIG_NAME="trafira"
+export TRAFIRA_SERVER_RUNTIME_UC="$SERVER_RUNTIME"
 
 if grep -E 'uci -q|command -v uci' "$SERVER_RUNTIME" >/dev/null; then
   fail "server/service.uc must use ucode UCI access instead of shelling out to uci"
 fi
 if grep -F 'output("ucode "' "$SERVER_RUNTIME" >/dev/null; then
-  fail "server defaults must not spawn service.uc without the Forkop module path"
+  fail "server defaults must not spawn service.uc without the Trafira module path"
 fi
 
 cat >"$STATE" <<'EOF_STATE'
-forkop.vless=server
-forkop.vless.protocol=vless
-forkop.vless.server_users=client|22222222-2222-4222-8222-222222222222|xtls-rprx-vision
-forkop.socks=server
-forkop.socks.protocol=socks
-forkop.socks.label=desk
-forkop.socks_open=server
-forkop.socks_open.protocol=socks
-forkop.socks_open.label=guest
-forkop.socks_open.socks_auth_enabled=0
-forkop.tailscale=server
-forkop.tailscale.protocol=tailscale
-forkop.json=server
-forkop.json.protocol=json_inbound
-forkop.mtproto=server
-forkop.mtproto.protocol=mtproto
-forkop.mtproto.mtproto_secret=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
-forkop.mtproto_legacy=server
-forkop.mtproto_legacy.protocol=mtproto
-forkop.mtproto_legacy.server_users=client|eebbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb676f6f676c652e636f6d
+trafira.vless=server
+trafira.vless.protocol=vless
+trafira.vless.server_users=client|22222222-2222-4222-8222-222222222222|xtls-rprx-vision
+trafira.socks=server
+trafira.socks.protocol=socks
+trafira.socks.label=desk
+trafira.socks_open=server
+trafira.socks_open.protocol=socks
+trafira.socks_open.label=guest
+trafira.socks_open.socks_auth_enabled=0
+trafira.tailscale=server
+trafira.tailscale.protocol=tailscale
+trafira.json=server
+trafira.json.protocol=json_inbound
+trafira.mtproto=server
+trafira.mtproto.protocol=mtproto
+trafira.mtproto.mtproto_secret=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+trafira.mtproto_legacy=server
+trafira.mtproto_legacy.protocol=mtproto
+trafira.mtproto_legacy.server_users=client|eebbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb676f6f676c652e636f6d
 EOF_STATE
 
 ucode -L "$UCODE_LIB" "$SERVER_RUNTIME" prepare-all-defaults
@@ -106,30 +106,30 @@ assert_value() {
   [ "$actual" = "$expected" ] || fail "$path: expected '$expected', got '$actual'"
 }
 
-assert_value forkop.vless.security reality
-assert_value forkop.vless.listen 0.0.0.0
-assert_value forkop.vless.listen_port 443
-assert_value forkop.vless.server_uuid 22222222-2222-4222-8222-222222222222
-assert_value forkop.vless.vless_flow xtls-rprx-vision
-assert_value forkop.vless.reality_short_id abcd1234
-assert_value forkop.vless.reality_private_key private-key
-assert_value forkop.vless.reality_public_key public-key
-assert_value forkop.socks.security none
-assert_value forkop.socks.socks_auth_enabled 1
-assert_value forkop.socks.server_username desk
-assert_value forkop.socks.server_password generated-password
-assert_value forkop.socks_open.socks_auth_enabled 0
-assert_value forkop.socks_open.server_username guest
-assert_value forkop.socks_open.server_password generated-password
-assert_value forkop.tailscale.security none
-assert_value forkop.tailscale.tailscale_control_url https://controlplane.tailscale.com
-assert_value forkop.tailscale.tailscale_hostname forkop-tailscale
-assert_value forkop.tailscale.tailscale_advertise_exit_node 1
-assert_value forkop.json.security none
-assert_value forkop.mtproto.mtproto_secret aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
-assert_value forkop.mtproto_legacy.mtproto_secret bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
-assert_value forkop.mtproto_legacy.mtproto_faketls google.com
-grep -Fxq 'commit forkop' "$LOG" || fail 'expected config commit'
+assert_value trafira.vless.security reality
+assert_value trafira.vless.listen 0.0.0.0
+assert_value trafira.vless.listen_port 443
+assert_value trafira.vless.server_uuid 22222222-2222-4222-8222-222222222222
+assert_value trafira.vless.vless_flow xtls-rprx-vision
+assert_value trafira.vless.reality_short_id abcd1234
+assert_value trafira.vless.reality_private_key private-key
+assert_value trafira.vless.reality_public_key public-key
+assert_value trafira.socks.security none
+assert_value trafira.socks.socks_auth_enabled 1
+assert_value trafira.socks.server_username desk
+assert_value trafira.socks.server_password generated-password
+assert_value trafira.socks_open.socks_auth_enabled 0
+assert_value trafira.socks_open.server_username guest
+assert_value trafira.socks_open.server_password generated-password
+assert_value trafira.tailscale.security none
+assert_value trafira.tailscale.tailscale_control_url https://controlplane.tailscale.com
+assert_value trafira.tailscale.tailscale_hostname trafira-tailscale
+assert_value trafira.tailscale.tailscale_advertise_exit_node 1
+assert_value trafira.json.security none
+assert_value trafira.mtproto.mtproto_secret aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+assert_value trafira.mtproto_legacy.mtproto_secret bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
+assert_value trafira.mtproto_legacy.mtproto_faketls google.com
+grep -Fxq 'commit trafira' "$LOG" || fail 'expected config commit'
 
 : >"$LOG"
 ucode -L "$UCODE_LIB" "$SERVER_RUNTIME" prepare-all-defaults

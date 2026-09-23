@@ -2,15 +2,15 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-FORKOP_LIB="$ROOT_DIR/forkop/files/usr/lib"
-NFT_RUNTIME="$ROOT_DIR/forkop/files/usr/lib/nft/apply.uc"
+TRAFIRA_LIB="$ROOT_DIR/trafira/files/usr/lib"
+NFT_RUNTIME="$ROOT_DIR/trafira/files/usr/lib/nft/apply.uc"
 WORK_DIR="$(mktemp -d)"
 IP_LOG="$WORK_DIR/ip.log"
 LOGGER_LOG="$WORK_DIR/logger.log"
 SYSCTL_LOG="$WORK_DIR/sysctl.log"
 
 nft_ucode() {
-  ucode -L "$FORKOP_LIB" "$NFT_RUNTIME" "$@"
+  ucode -L "$TRAFIRA_LIB" "$NFT_RUNTIME" "$@"
 }
 
 cleanup() {
@@ -105,7 +105,7 @@ export IP_LOG LOGGER_LOG SYSCTL_LOG
 rt_tables="$WORK_DIR/rt_tables"
 SYSCTL_IPV6_ALL_DISABLE=1 SYSCTL_IPV6_LO_DISABLE=1 \
   IP_ROUTE_OUTPUT='' IP_RULE_OUTPUT='' \
-  nft_ucode ensure-tproxy-route-rule forkop 0x00100000 "$rt_tables"
+  nft_ucode ensure-tproxy-route-rule trafira 0x00100000 "$rt_tables"
 
-assert_contains "$IP_LOG" $'ip\troute\tadd\tlocal\t0.0.0.0/0\tdev\tlo\ttable\tforkop' "IPv4 TPROXY route"
-assert_contains "$IP_LOG" $'ip\t-4\trule\tadd\tfwmark\t0x00100000/0x00100000\ttable\tforkop\tpriority\t105' "IPv4 TPROXY rule"
+assert_contains "$IP_LOG" $'ip\troute\tadd\tlocal\t0.0.0.0/0\tdev\tlo\ttable\ttrafira' "IPv4 TPROXY route"
+assert_contains "$IP_LOG" $'ip\t-4\trule\tadd\tfwmark\t0x00100000/0x00100000\ttable\ttrafira\tpriority\t105' "IPv4 TPROXY rule"

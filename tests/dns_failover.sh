@@ -2,9 +2,9 @@
 set -eo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-FORKOP_LIB="$ROOT_DIR/forkop/files/usr/lib"
-GENERATOR="$FORKOP_LIB/singbox/generator.uc"
-FAILOVER="$FORKOP_LIB/singbox/dns_failover.uc"
+TRAFIRA_LIB="$ROOT_DIR/trafira/files/usr/lib"
+GENERATOR="$TRAFIRA_LIB/singbox/generator.uc"
+FAILOVER="$TRAFIRA_LIB/singbox/dns_failover.uc"
 WORK_DIR="$(mktemp -d)"
 
 cleanup() {
@@ -21,9 +21,9 @@ generate() {
   local fixture="$1"
   local output="$2"
   local state="${3:-$WORK_DIR/missing-state.json}"
-  FORKOP_LIB="$FORKOP_LIB" \
-    FORKOP_DNS_FAILOVER_STATE_FILE="$state" \
-    ucode -L "$FORKOP_LIB" "$GENERATOR" generate-config-fixture "$fixture" "$output" 192.168.1.1 0
+  TRAFIRA_LIB="$TRAFIRA_LIB" \
+    TRAFIRA_DNS_FAILOVER_STATE_FILE="$state" \
+    ucode -L "$TRAFIRA_LIB" "$GENERATOR" generate-config-fixture "$fixture" "$output" 192.168.1.1 0
 }
 
 cat >"$WORK_DIR/single.json" <<'JSON'
@@ -143,11 +143,11 @@ cat >"$WORK_DIR/alive-recovery.json" <<'JSON'
 { "0": true, "1": true }
 JSON
 
-selected="$(ucode -L "$FORKOP_LIB" "$FAILOVER" select-fixture "$WORK_DIR/select-state.json" "$WORK_DIR/alive-failover.json" main 0)"
+selected="$(ucode -L "$TRAFIRA_LIB" "$FAILOVER" select-fixture "$WORK_DIR/select-state.json" "$WORK_DIR/alive-failover.json" main 0)"
 printf '%s' "$selected" | grep -Eq '"index"[[:space:]]*:[[:space:]]*1' || fail "dead active DNS must select the first live server below"
 printf '%s' "$selected" | grep -Eq '"reason"[[:space:]]*:[[:space:]]*"active_dead"' || fail "failover reason"
 
-selected="$(ucode -L "$FORKOP_LIB" "$FAILOVER" select-fixture "$WORK_DIR/select-state.json" "$WORK_DIR/alive-recovery.json" bootstrap 1)"
+selected="$(ucode -L "$TRAFIRA_LIB" "$FAILOVER" select-fixture "$WORK_DIR/select-state.json" "$WORK_DIR/alive-recovery.json" bootstrap 1)"
 printf '%s' "$selected" | grep -Eq '"index"[[:space:]]*:[[:space:]]*0' || fail "recovery must return to the highest live priority"
 printf '%s' "$selected" | grep -Eq '"reason"[[:space:]]*:[[:space:]]*"recovery"' || fail "recovery reason"
 
@@ -158,7 +158,7 @@ cat >"$WORK_DIR/verify-bootstrap.json" <<'JSON'
 { "main_index": 0, "bootstrap_index": 1, "bootstrap_servers": [ "a", "b" ] }
 JSON
 
-verification="$(ucode -L "$FORKOP_LIB" "$FAILOVER" verification-plan-fixture "$WORK_DIR/verify-previous.json" "$WORK_DIR/verify-bootstrap.json")"
+verification="$(ucode -L "$TRAFIRA_LIB" "$FAILOVER" verification-plan-fixture "$WORK_DIR/verify-previous.json" "$WORK_DIR/verify-bootstrap.json")"
 printf '%s' "$verification" | grep -Eq '"main"[[:space:]]*:[[:space:]]*false' || fail "bootstrap-only switch must not require a dead main DNS to recover"
 printf '%s' "$verification" | grep -Eq '"bootstrap"[[:space:]]*:[[:space:]]*true' || fail "bootstrap-only switch must verify the selected bootstrap DNS"
 
@@ -205,18 +205,18 @@ cat >"$WORK_DIR/reset-recoveries.json" <<'JSON'
 ]
 JSON
 
-threshold_result="$(ucode -L "$FORKOP_LIB" "$FAILOVER" threshold-fixture "$WORK_DIR/two-failures.json" 0 3 0)"
+threshold_result="$(ucode -L "$TRAFIRA_LIB" "$FAILOVER" threshold-fixture "$WORK_DIR/two-failures.json" 0 3 0)"
 printf '%s' "$threshold_result" | grep -Eq '"index"[[:space:]]*:[[:space:]]*0' || fail "two failures must not switch"
-threshold_result="$(ucode -L "$FORKOP_LIB" "$FAILOVER" threshold-fixture "$WORK_DIR/three-failures.json" 0 3 0)"
+threshold_result="$(ucode -L "$TRAFIRA_LIB" "$FAILOVER" threshold-fixture "$WORK_DIR/three-failures.json" 0 3 0)"
 printf '%s' "$threshold_result" | grep -Eq '"index"[[:space:]]*:[[:space:]]*1' || fail "third failure must switch"
-threshold_result="$(ucode -L "$FORKOP_LIB" "$FAILOVER" threshold-fixture "$WORK_DIR/reset-failures.json" 0 3 0)"
+threshold_result="$(ucode -L "$TRAFIRA_LIB" "$FAILOVER" threshold-fixture "$WORK_DIR/reset-failures.json" 0 3 0)"
 printf '%s' "$threshold_result" | grep -Eq '"index"[[:space:]]*:[[:space:]]*0' || fail "successful check must reset failures"
 
-threshold_result="$(ucode -L "$FORKOP_LIB" "$FAILOVER" threshold-fixture "$WORK_DIR/two-recoveries.json" 1 3 1)"
+threshold_result="$(ucode -L "$TRAFIRA_LIB" "$FAILOVER" threshold-fixture "$WORK_DIR/two-recoveries.json" 1 3 1)"
 printf '%s' "$threshold_result" | grep -Eq '"index"[[:space:]]*:[[:space:]]*1' || fail "two recoveries must not switch"
-threshold_result="$(ucode -L "$FORKOP_LIB" "$FAILOVER" threshold-fixture "$WORK_DIR/three-recoveries.json" 1 3 1)"
+threshold_result="$(ucode -L "$TRAFIRA_LIB" "$FAILOVER" threshold-fixture "$WORK_DIR/three-recoveries.json" 1 3 1)"
 printf '%s' "$threshold_result" | grep -Eq '"index"[[:space:]]*:[[:space:]]*0' || fail "third recovery must switch"
-threshold_result="$(ucode -L "$FORKOP_LIB" "$FAILOVER" threshold-fixture "$WORK_DIR/reset-recoveries.json" 1 3 1)"
+threshold_result="$(ucode -L "$TRAFIRA_LIB" "$FAILOVER" threshold-fixture "$WORK_DIR/reset-recoveries.json" 1 3 1)"
 printf '%s' "$threshold_result" | grep -Eq '"index"[[:space:]]*:[[:space:]]*1' || fail "failed recovery must reset successes"
 
 printf 'DNS failover checks passed\n'

@@ -2,10 +2,10 @@
 set -eo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-FORKOP_LIB="$ROOT_DIR/forkop/files/usr/lib"
-GENERATOR_UC="$FORKOP_LIB/singbox/generator.uc"
-VALIDATOR_UC="$FORKOP_LIB/config/validator.uc"
-PRIORITY_UC="$FORKOP_LIB/singbox/priority.uc"
+TRAFIRA_LIB="$ROOT_DIR/trafira/files/usr/lib"
+GENERATOR_UC="$TRAFIRA_LIB/singbox/generator.uc"
+VALIDATOR_UC="$TRAFIRA_LIB/config/validator.uc"
+PRIORITY_UC="$TRAFIRA_LIB/singbox/priority.uc"
 WORK_DIR="$(mktemp -d)"
 
 cleanup() {
@@ -24,7 +24,7 @@ generate_config() {
   local supports_extended="${3:-}"
 
   mkdir -p "${output}.section-cache"
-  ucode -L "$FORKOP_LIB" "$GENERATOR_UC" generate-config-fixture \
+  ucode -L "$TRAFIRA_LIB" "$GENERATOR_UC" generate-config-fixture \
     "$fixture" "$output" "127.0.0.1" "0" "$supports_extended"
 }
 
@@ -39,7 +39,7 @@ input.settings.dns_server ??= ['77.88.8.8'];
 input.settings.bootstrap_dns_server ??= ['77.88.8.8'];
 fs.writeFileSync(process.argv[3], JSON.stringify(input));
 JS
-  FORKOP_LIB="$FORKOP_LIB" ucode -L "$FORKOP_LIB" "$VALIDATOR_UC" \
+  TRAFIRA_LIB="$TRAFIRA_LIB" ucode -L "$TRAFIRA_LIB" "$VALIDATOR_UC" \
     validate-runtime-fixture "$normalized" "{}"
 }
 
@@ -423,7 +423,7 @@ JSON
 cat >"$WORK_DIR/select-first-live-latency.json" <<'JSON'
 { "a": -1, "b": 200, "c": 50 }
 JSON
-first_live="$(ucode -L "$FORKOP_LIB" "$PRIORITY_UC" select-fixture \
+first_live="$(ucode -L "$TRAFIRA_LIB" "$PRIORITY_UC" select-fixture \
   "$WORK_DIR/select-first-live-group.json" "$WORK_DIR/select-first-live-latency.json" 0 1)"
 printf '%s\n' "$first_live" | grep -Fq '"tag": "b"' ||
   fail "priority selection should choose the first live outbound when pick_fastest=0"
@@ -440,7 +440,7 @@ JSON
 cat >"$WORK_DIR/select-fastest-latency.json" <<'JSON'
 { "a": 80, "b": 20, "c": 50 }
 JSON
-fastest="$(ucode -L "$FORKOP_LIB" "$PRIORITY_UC" select-fixture \
+fastest="$(ucode -L "$TRAFIRA_LIB" "$PRIORITY_UC" select-fixture \
   "$WORK_DIR/select-fastest-group.json" "$WORK_DIR/select-fastest-latency.json" 0 0)"
 printf '%s\n' "$fastest" | grep -Fq '"tag": "b"' ||
   fail "priority selection should choose the fastest live outbound when pick_fastest=1"
@@ -709,7 +709,7 @@ cat >"$WORK_DIR/bad-filter-mode.json" <<'JSON'
 JSON
 assert_rejects "priority level bad filter mode" "$WORK_DIR/bad-filter-mode.json" "Invalid Priority filter mode"
 
-skip_dead="$(ucode -L "$FORKOP_LIB" "$PRIORITY_UC" select-fixture \
+skip_dead="$(ucode -L "$TRAFIRA_LIB" "$PRIORITY_UC" select-fixture \
   "$WORK_DIR/select-first-live-group.json" "$WORK_DIR/select-fastest-latency.json" 0 1 a)"
 printf '%s\n' "$skip_dead" | grep -Fq '"tag": "b"' ||
   fail "replacement selection should skip the just-failed active outbound"
@@ -717,12 +717,12 @@ printf '%s\n' "$skip_dead" | grep -Fq '"tag": "b"' ||
 cat >"$WORK_DIR/select-faster-current-latency.json" <<'JSON'
 { "a": 100, "b": 50, "c": 80 }
 JSON
-same_level="$(ucode -L "$FORKOP_LIB" "$PRIORITY_UC" select-faster-fixture \
+same_level="$(ucode -L "$TRAFIRA_LIB" "$PRIORITY_UC" select-faster-fixture \
   "$WORK_DIR/select-fastest-group.json" "$WORK_DIR/select-faster-current-latency.json" 0 a)"
 printf '%s\n' "$same_level" | grep -Fq '"tag": "b"' ||
   fail "same-level switching should compare candidates with the active delay from the same pass"
 
-priority_now="$(ucode -L "$FORKOP_LIB" "$PRIORITY_UC" now-seconds-fixture)"
+priority_now="$(ucode -L "$TRAFIRA_LIB" "$PRIORITY_UC" now-seconds-fixture)"
 monotonic_now="$(ucode -e 'print(clock(true)[0], "\n")')"
 case "$priority_now:$monotonic_now" in
   *[!0-9:]*|'':*) fail "Priority monotonic clock fixture returned invalid data" ;;

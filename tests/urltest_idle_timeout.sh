@@ -2,7 +2,7 @@
 set -eo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-FORKOP_LIB="$ROOT_DIR/forkop/files/usr/lib"
+TRAFIRA_LIB="$ROOT_DIR/trafira/files/usr/lib"
 WORK_DIR="$(mktemp -d)"
 
 cleanup() {
@@ -20,7 +20,7 @@ generate_config() {
   local output="$2"
 
   mkdir -p "${output}.section-cache"
-  ucode -L "$FORKOP_LIB" "$FORKOP_LIB/singbox/generator.uc" generate-config-fixture \
+  ucode -L "$TRAFIRA_LIB" "$TRAFIRA_LIB/singbox/generator.uc" generate-config-fixture \
     "$fixture" "$output" "127.0.0.1"
 }
 

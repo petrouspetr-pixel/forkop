@@ -2,11 +2,11 @@
 set -eo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-FORKOP_MAKEFILE="$ROOT_DIR/forkop/Makefile"
-FORKOP_CONFIG="$ROOT_DIR/forkop/files/etc/config/forkop"
+TRAFIRA_MAKEFILE="$ROOT_DIR/trafira/Makefile"
+TRAFIRA_CONFIG="$ROOT_DIR/trafira/files/etc/config/trafira"
 BUILD_SCRIPT="$ROOT_DIR/build.sh"
 BUILD_WORKFLOW="$ROOT_DIR/.github/workflows/build.yml"
-FORKOP_LIB="$ROOT_DIR/forkop/files/usr/lib"
+TRAFIRA_LIB="$ROOT_DIR/trafira/files/usr/lib"
 
 fail() {
   printf 'FAIL: %s\n' "$1" >&2
@@ -22,8 +22,8 @@ require_file() {
 require_make_dep() {
   local package="$1"
 
-  grep -Eq "DEPENDS:=.*(^|[[:space:]])\\+$package([[:space:]]|$)" "$FORKOP_MAKEFILE" ||
-    fail "forkop/Makefile DEPENDS is missing +$package"
+  grep -Eq "DEPENDS:=.*(^|[[:space:]])\\+$package([[:space:]]|$)" "$TRAFIRA_MAKEFILE" ||
+    fail "trafira/Makefile DEPENDS is missing +$package"
 }
 
 require_build_dep() {
@@ -42,11 +42,11 @@ require_package_dependency() {
   require_build_dep "BACKEND_DEPENDS_APK" "$package"
 }
 
-require_file "$FORKOP_MAKEFILE"
-require_file "$FORKOP_CONFIG"
+require_file "$TRAFIRA_MAKEFILE"
+require_file "$TRAFIRA_CONFIG"
 require_file "$BUILD_SCRIPT"
 require_file "$BUILD_WORKFLOW"
-require_file "$FORKOP_LIB"
+require_file "$TRAFIRA_LIB"
 
 bash "$BUILD_SCRIPT" --help >/dev/null ||
   fail "build.sh must provide command-line usage"
@@ -77,60 +77,60 @@ grep -Fq "replace('\\\\n', '\\n')" "$BUILD_WORKFLOW" ||
 grep -Fq 'body: ${{ needs.preparation.outputs.release_notes }}' "$BUILD_WORKFLOW" ||
   fail "release action must receive normalized Markdown notes"
 
-for conflict in https-dns-proxy nextdns luci-app-passwall luci-app-passwall2; do
-  grep -E 'CONFLICTS:=' "$FORKOP_MAKEFILE" | grep -Fq "$conflict" ||
-    fail "forkop/Makefile conflicts are missing $conflict"
+for conflict in https-dns-proxy nextdns luci-app-passwall luci-app-passwall2 forkop podkop-plus podkop; do
+  grep -E 'CONFLICTS:=' "$TRAFIRA_MAKEFILE" | grep -Fq "$conflict" ||
+    fail "trafira/Makefile conflicts are missing $conflict"
   grep -E '^BACKEND_CONFLICTS_IPK=' "$BUILD_SCRIPT" | grep -Fq "$conflict" ||
     fail "manual IPK conflicts are missing $conflict"
   grep -E '^BACKEND_DEPENDS_APK=' "$BUILD_SCRIPT" | grep -Fq "!$conflict" ||
     fail "manual APK conflicts are missing $conflict"
 done
 
-if grep -Fq 'coreutils-sort' "$FORKOP_MAKEFILE" "$BUILD_SCRIPT"; then
+if grep -Fq 'coreutils-sort' "$TRAFIRA_MAKEFILE" "$BUILD_SCRIPT"; then
   fail "unused coreutils-sort runtime dependency must not be packaged"
 fi
 
-grep -Fq "must use x.y.z format" "$FORKOP_MAKEFILE" ||
-  fail "forkop/Makefile must enforce the three-part release version contract"
+grep -Fq "must use x.y.z format" "$TRAFIRA_MAKEFILE" ||
+  fail "trafira/Makefile must enforce the three-part release version contract"
 grep -Fq 'APK_INTERNAL_VERSION="$RELEASE_VERSION"' "$BUILD_SCRIPT" ||
   fail "build.sh must use the exact three-part release version for APK metadata"
-grep -Fq 'USERID:=forkopbyedpi:forkopbyedpi' "$FORKOP_MAKEFILE" ||
-  fail "Forkop package must create a dedicated ByeDPI runtime user"
-grep -Fq 'BACKEND_REQUIRE_USER="forkopbyedpi:forkopbyedpi"' "$BUILD_SCRIPT" ||
+grep -Fq 'USERID:=trafirabyedpi:trafirabyedpi' "$TRAFIRA_MAKEFILE" ||
+  fail "Trafira package must create a dedicated ByeDPI runtime user"
+grep -Fq 'BACKEND_REQUIRE_USER="trafirabyedpi:trafirabyedpi"' "$BUILD_SCRIPT" ||
   fail "manual release builds must preserve the ByeDPI runtime user contract"
 grep -Fq 'Require-User: ${BACKEND_REQUIRE_USER}' "$BUILD_SCRIPT" ||
   fail "manual IPK metadata must declare the ByeDPI runtime user"
 grep -Fq '${package_name}.rusers' "$BUILD_SCRIPT" ||
   fail "manual APK metadata must carry the ByeDPI runtime user"
-grep -Fq 'export pkgname="forkop"' "$BUILD_SCRIPT" ||
-  fail "manual backend package scripts must initialize Forkop user metadata"
-grep -Fq "option component_update_check_enabled '1'" "$FORKOP_CONFIG" ||
+grep -Fq 'export pkgname="trafira"' "$BUILD_SCRIPT" ||
+  fail "manual backend package scripts must initialize Trafira user metadata"
+grep -Fq "option component_update_check_enabled '1'" "$TRAFIRA_CONFIG" ||
   fail "new installations must enable component update checks by default"
-grep -Fq "option config_version '1.0.5'" "$FORKOP_CONFIG" ||
+grep -Fq "option config_version '1.0.5'" "$TRAFIRA_CONFIG" ||
   fail "new installations must start at the current configuration schema version"
-grep -Fq "list applied_migrations 'interface_sections'" "$FORKOP_CONFIG" ||
+grep -Fq "list applied_migrations 'interface_sections'" "$TRAFIRA_CONFIG" ||
   fail "new installations must mark the interface section migration as applied"
-grep -Fq "list applied_migrations 'enable_component_checks'" "$FORKOP_CONFIG" ||
+grep -Fq "list applied_migrations 'enable_component_checks'" "$TRAFIRA_CONFIG" ||
   fail "new installations must mark the component check migration as applied"
-grep -Fq "list applied_migrations 'http_connection_urls'" "$FORKOP_CONFIG" ||
+grep -Fq "list applied_migrations 'http_connection_urls'" "$TRAFIRA_CONFIG" ||
   fail "new installations must mark the HTTP connection URL migration as applied"
-grep -Fq '/usr/lib/forkop/config/migration.uc migrate' "$FORKOP_MAKEFILE" ||
+grep -Fq '/usr/lib/trafira/config/migration.uc migrate' "$TRAFIRA_MAKEFILE" ||
   fail "OpenWrt package postinst must run configuration migrations"
-[ "$(grep -Fc '/usr/lib/forkop/config/migration.uc migrate' "$BUILD_SCRIPT")" -ge 3 ] ||
+[ "$(grep -Fc '/usr/lib/trafira/config/migration.uc migrate' "$BUILD_SCRIPT")" -ge 3 ] ||
   fail "manual IPK/APK package scripts must run configuration migrations after install and upgrade"
 
-if grep -Rqs 'require("uci")' "$FORKOP_LIB"; then
+if grep -Rqs 'require("uci")' "$TRAFIRA_LIB"; then
   require_package_dependency "ucode-mod-uci"
 fi
 
-if grep -Rqs 'require("fs")' "$FORKOP_LIB"; then
+if grep -Rqs 'require("fs")' "$TRAFIRA_LIB"; then
   require_package_dependency "ucode-mod-fs"
 fi
 
-if grep -Rqs 'forkop_dnsmasq_failsafe_restore_raw' \
-  "$ROOT_DIR/forkop/files/usr/bin" \
-  "$ROOT_DIR/forkop/files/usr/lib" \
-  "$ROOT_DIR/forkop/files/etc/init.d"; then
+if grep -Rqs 'trafira_dnsmasq_failsafe_restore_raw' \
+  "$ROOT_DIR/trafira/files/usr/bin" \
+  "$ROOT_DIR/trafira/files/usr/lib" \
+  "$ROOT_DIR/trafira/files/etc/init.d"; then
   fail "duplicated raw dnsmasq failsafe restore shell owner is present"
 fi
 

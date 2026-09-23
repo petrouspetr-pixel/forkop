@@ -2,12 +2,12 @@
 set -eo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-FORKOP_BIN="$ROOT_DIR/forkop/files/usr/bin/forkop"
-FORKOP_LIB="$ROOT_DIR/forkop/files/usr/lib"
-CLI_UC="$FORKOP_BIN"
-BYEDPI_RUNTIME_SH="$FORKOP_LIB/byedpi.sh"
-LIFECYCLE_UC="$FORKOP_LIB/service/lifecycle.uc"
-BYEDPI_RUNTIME_UC="$FORKOP_LIB/providers/byedpi/runtime.uc"
+TRAFIRA_BIN="$ROOT_DIR/trafira/files/usr/bin/trafira"
+TRAFIRA_LIB="$ROOT_DIR/trafira/files/usr/lib"
+CLI_UC="$TRAFIRA_BIN"
+BYEDPI_RUNTIME_SH="$TRAFIRA_LIB/byedpi.sh"
+LIFECYCLE_UC="$TRAFIRA_LIB/service/lifecycle.uc"
+BYEDPI_RUNTIME_UC="$TRAFIRA_LIB/providers/byedpi/runtime.uc"
 WORK_DIR="$(mktemp -d)"
 
 cleanup() {
@@ -23,15 +23,15 @@ fail() {
 [ ! -e "$BYEDPI_RUNTIME_SH" ] ||
   fail "byedpi.sh shell owner must be removed"
 
-grep -Fq '#!/usr/bin/ucode' "$FORKOP_BIN" ||
-  fail "forkop entrypoint must be a direct ucode executable"
+grep -Fq '#!/usr/bin/ucode' "$TRAFIRA_BIN" ||
+  fail "trafira entrypoint must be a direct ucode executable"
 grep -Fq 'service/lifecycle.uc' "$CLI_UC" ||
   fail "service/cli.uc must dispatch lifecycle orchestration through service/lifecycle.uc"
 grep -Fq 'providers/byedpi/runtime.uc' "$LIFECYCLE_UC" ||
   fail "service/lifecycle.uc must call providers/byedpi/runtime.uc for ByeDPI runtime operations"
 
 if grep -R -n -E 'start_byedpi_runtime|stop_byedpi_runtime|get_byedpi_status_json|check_byedpi_runtime_json|is_byedpi_installed|get_byedpi_package_version|get_byedpi_rule_|run_byedpi_supervisor' \
-  "$FORKOP_BIN" "$FORKOP_LIB" --include='*.sh' >/dev/null 2>&1; then
+  "$TRAFIRA_BIN" "$TRAFIRA_LIB" --include='*.sh' >/dev/null 2>&1; then
   fail "ByeDPI runtime shell symbols must not remain"
 fi
 if grep -n -E 'require\("uci"\)\.cursor|uci -q|"uci", "-q"' "$BYEDPI_RUNTIME_UC" >/dev/null 2>&1; then
@@ -70,12 +70,12 @@ esac
 SH
 chmod +x "$WORK_DIR/apk"
 
-version="$(FORKOP_LIB="$FORKOP_LIB" PATH="$WORK_DIR:$PATH" ucode -L "$FORKOP_LIB" "$BYEDPI_RUNTIME_UC" package-version)"
+version="$(TRAFIRA_LIB="$TRAFIRA_LIB" PATH="$WORK_DIR:$PATH" ucode -L "$TRAFIRA_LIB" "$BYEDPI_RUNTIME_UC" package-version)"
 [ "$version" = "0.17.3-r1" ] ||
   fail "ByeDPI APK version was parsed as '$version'"
 
-FORKOP_LIB="$FORKOP_LIB" BYEDPI_BIN="$ROOT_DIR/tests/missing-ciadpi" \
-  ucode -L "$FORKOP_LIB" "$BYEDPI_RUNTIME_UC" check |
+TRAFIRA_LIB="$TRAFIRA_LIB" BYEDPI_BIN="$ROOT_DIR/tests/missing-ciadpi" \
+  ucode -L "$TRAFIRA_LIB" "$BYEDPI_RUNTIME_UC" check |
   node -e '
 const fs = require("fs");
 const value = JSON.parse(fs.readFileSync(0, "utf8"));
@@ -86,32 +86,32 @@ if (value.byedpi_installed !== false || value.byedpi_package_installed !== false
 '
 
 supervisor_command="$(
-  FORKOP_LIB="$FORKOP_LIB" \
+  TRAFIRA_LIB="$TRAFIRA_LIB" \
   BYEDPI_BIN="/usr/bin/ciadpi" \
-  BYEDPI_RUNTIME_USER="forkopbyedpi" \
-  BYEDPI_RUNTIME_GROUP="forkopbyedpi" \
-  ucode -L "$FORKOP_LIB" -- "$BYEDPI_RUNTIME_UC" supervisor-command \
-    1080 '-o 1' /tmp/forkop-byedpi-child.pid
+  BYEDPI_RUNTIME_USER="trafirabyedpi" \
+  BYEDPI_RUNTIME_GROUP="trafirabyedpi" \
+  ucode -L "$TRAFIRA_LIB" -- "$BYEDPI_RUNTIME_UC" supervisor-command \
+    1080 '-o 1' /tmp/trafira-byedpi-child.pid
 )"
 
 grep -Fq '"--",' "$BYEDPI_RUNTIME_UC" ||
-  fail "Forkop-managed supervisor launch must protect dash-prefixed strategy arguments with ucode --"
+  fail "Trafira-managed supervisor launch must protect dash-prefixed strategy arguments with ucode --"
 
 case "$supervisor_command" in
   *start-stop-daemon*) ;;
-  *) fail "Forkop-managed ciadpi must start through start-stop-daemon" ;;
+  *) fail "Trafira-managed ciadpi must start through start-stop-daemon" ;;
 esac
 case "$supervisor_command" in
-  *forkopbyedpi:forkopbyedpi*) ;;
-  *) fail "Forkop-managed ciadpi must run under the dedicated user/group" ;;
+  *trafirabyedpi:trafirabyedpi*) ;;
+  *) fail "Trafira-managed ciadpi must run under the dedicated user/group" ;;
 esac
 case "$supervisor_command" in
   */usr/bin/ciadpi*) ;;
-  *) fail "Forkop-managed runtime must execute ciadpi" ;;
+  *) fail "Trafira-managed runtime must execute ciadpi" ;;
 esac
 case "$supervisor_command" in
   *127.0.0.1*1080*) ;;
-  *) fail "Forkop-managed ciadpi listen address/port mismatch" ;;
+  *) fail "Trafira-managed ciadpi listen address/port mismatch" ;;
 esac
 case "$supervisor_command" in
   *"-o"*"1"*) ;;

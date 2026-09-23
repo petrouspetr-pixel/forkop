@@ -1,0 +1,14 @@
+{
+  "admin/services/trafira": {
+    "title": "Trafira",
+    "order": 42,
+    "action": {
+      "type": "view",
+      "path": "trafira/trafira"
+    },
+    "depends": {
+			"acl": [ "luci-app-trafira" ],
+			"uci": { "trafira": true }
+		}
+  }
+}

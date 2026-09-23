@@ -2,11 +2,11 @@
 set -eo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-UI_UC="$ROOT_DIR/forkop/files/usr/lib/service/ui.uc"
-FORKOP_FILES="$ROOT_DIR/forkop/files"
-FORKOP_BIN="$FORKOP_FILES/usr/bin/forkop"
-FORKOP_INIT="$FORKOP_FILES/etc/init.d/forkop"
-UI_RUNTIME_SH="$FORKOP_FILES/usr/lib/ui_runtime.sh"
+UI_UC="$ROOT_DIR/trafira/files/usr/lib/service/ui.uc"
+TRAFIRA_FILES="$ROOT_DIR/trafira/files"
+TRAFIRA_BIN="$TRAFIRA_FILES/usr/bin/trafira"
+TRAFIRA_INIT="$TRAFIRA_FILES/etc/init.d/trafira"
+UI_RUNTIME_SH="$TRAFIRA_FILES/usr/lib/ui_runtime.sh"
 WORK_DIR="$(mktemp -d)"
 
 cleanup() {
@@ -20,7 +20,7 @@ fail() {
 }
 
 ui_ucode() {
-  ucode -L "$FORKOP_FILES/usr/lib" "$UI_UC" "$@"
+  ucode -L "$TRAFIRA_FILES/usr/lib" "$UI_UC" "$@"
 }
 
 assert_eq() {
@@ -42,16 +42,16 @@ write_state() {
 [ ! -e "$UI_RUNTIME_SH" ] ||
   fail "ui_runtime.sh shell owner must be removed"
 
-if grep -R -n "ui_runtime.sh" "$FORKOP_FILES" >/dev/null 2>&1; then
+if grep -R -n "ui_runtime.sh" "$TRAFIRA_FILES" >/dev/null 2>&1; then
   fail "runtime files must not reference ui_runtime.sh"
 fi
 
-ui_runtime_shell_symbols='ui_runtime_|forkop_fast_get_ui_state|FORKOP_UI_RUNTIME|load_ui_runtime'
-if grep -R -n -E "$ui_runtime_shell_symbols" "$FORKOP_BIN" "$FORKOP_INIT" "$FORKOP_FILES/usr/lib" --include='*.sh' >/dev/null 2>&1; then
+ui_runtime_shell_symbols='ui_runtime_|trafira_fast_get_ui_state|TRAFIRA_UI_RUNTIME|load_ui_runtime'
+if grep -R -n -E "$ui_runtime_shell_symbols" "$TRAFIRA_BIN" "$TRAFIRA_INIT" "$TRAFIRA_FILES/usr/lib" --include='*.sh' >/dev/null 2>&1; then
   fail "ui_runtime shell symbols must not remain in runtime shell"
 fi
 
-if grep -R -n '^get_ui_capabilities()' "$FORKOP_FILES/usr/lib" --include='*.sh' >/dev/null 2>&1; then
+if grep -R -n '^get_ui_capabilities()' "$TRAFIRA_FILES/usr/lib" --include='*.sh' >/dev/null 2>&1; then
   fail "UI capabilities must be owned by service/ui.uc, not shell"
 fi
 grep -Fq 'require("core.uci")' "$UI_UC" ||
@@ -59,8 +59,8 @@ grep -Fq 'require("core.uci")' "$UI_UC" ||
 if grep -n -E 'require\("uci"\)\.cursor|uci -q|uci", "-q"' "$UI_UC" >/dev/null 2>&1; then
   fail "service/ui.uc must not own direct UCI cursor or CLI reads"
 fi
-grep -Fq '"forkop-stably-running"' "$UI_UC" ||
-  fail "UI Forkop status must use stable runtime state to avoid crash-loop flicker"
+grep -Fq '"trafira-stably-running"' "$UI_UC" ||
+  fail "UI Trafira status must use stable runtime state to avoid crash-loop flicker"
 grep -Fq '"sing-box-service-stable"' "$UI_UC" ||
   fail "UI sing-box status must use stable runtime state to avoid crash-loop flicker"
 if sed -n '/^function ensure_dir(/,/^}/p' "$UI_UC" | grep -Fq 'mkdir", "-p'; then
@@ -139,7 +139,7 @@ latency_action_dir="$WORK_DIR/latency-actions"
 mkdir -p "$latency_action_dir"
 latency_state="$latency_action_dir/latency-1.json"
 printf '%s\n' '{"success":true,"running":true,"kind":"latency","latency_type":"proxy_list","section":"main","tag":"[]","started_at":100}' >"$latency_state"
-FORKOP_UI_LATENCY_ACTION_DIR="$latency_action_dir" \
+TRAFIRA_UI_LATENCY_ACTION_DIR="$latency_action_dir" \
   ui_ucode latency-progress-state "$latency_state" 2 5 1 >/dev/null ||
   fail "latency-progress-state should update running latency jobs"
 JOB_STATE="$latency_state" node - <<'NODE'
@@ -222,25 +222,25 @@ ui_ucode cleanup-action-dir-fixture "$cleanup_dir"
 old_state="$cleanup_dir/old.json"
 printf '%s\n' '{"running":false}' >"$old_state"
 touch -d '2 hours ago' "$old_state"
-FORKOP_UI_ACTION_FINISHED_TTL_MINUTES=60 ui_ucode cleanup-action-dir-fixture "$cleanup_dir"
+TRAFIRA_UI_ACTION_FINISHED_TTL_MINUTES=60 ui_ucode cleanup-action-dir-fixture "$cleanup_dir"
 [ ! -e "$old_state" ] ||
   fail "old finished action state should be cleaned without find"
 
-export FORKOP_UI_STATE_DIR="$WORK_DIR/ui-state"
-export FORKOP_UI_SERVICE_ACTION_DIR="$FORKOP_UI_STATE_DIR/service-actions"
-export FORKOP_UI_SERVICE_ACTION_LOCK_DIR="$FORKOP_UI_STATE_DIR/service-actions.lock"
-export FORKOP_UI_LATENCY_ACTION_DIR="$FORKOP_UI_STATE_DIR/latency-actions"
-export FORKOP_UI_COMPONENT_ACTION_DIR="$FORKOP_UI_STATE_DIR/component-actions"
-export FORKOP_UI_SUBSCRIPTION_ACTION_DIR="$FORKOP_UI_STATE_DIR/subscription-actions"
+export TRAFIRA_UI_STATE_DIR="$WORK_DIR/ui-state"
+export TRAFIRA_UI_SERVICE_ACTION_DIR="$TRAFIRA_UI_STATE_DIR/service-actions"
+export TRAFIRA_UI_SERVICE_ACTION_LOCK_DIR="$TRAFIRA_UI_STATE_DIR/service-actions.lock"
+export TRAFIRA_UI_LATENCY_ACTION_DIR="$TRAFIRA_UI_STATE_DIR/latency-actions"
+export TRAFIRA_UI_COMPONENT_ACTION_DIR="$TRAFIRA_UI_STATE_DIR/component-actions"
+export TRAFIRA_UI_SUBSCRIPTION_ACTION_DIR="$TRAFIRA_UI_STATE_DIR/subscription-actions"
 
 latency_start="$(
-  FORKOP_BIN=/bin/true \
-  FORKOP_LIB="$FORKOP_FILES/usr/lib" \
+  TRAFIRA_BIN=/bin/true \
+  TRAFIRA_LIB="$TRAFIRA_FILES/usr/lib" \
     ui_ucode latency-test-async proxy_list main '["proxy-a","proxy-b"]' 5000
 )"
 latency_job_id="$(printf '%s' "$latency_start" | sed -n 's/.*"job_id"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p')"
 [ -n "$latency_job_id" ] || fail "latency-test-async should return a job id"
-latency_async_state="$FORKOP_UI_LATENCY_ACTION_DIR/$latency_job_id.json"
+latency_async_state="$TRAFIRA_UI_LATENCY_ACTION_DIR/$latency_job_id.json"
 [ -f "$latency_async_state" ] || fail "latency-test-async should create a state file"
 JOB_STATE="$latency_async_state" node - <<'NODE'
 const fs = require("fs");
@@ -253,7 +253,7 @@ NODE
 
 job_id="$(ui_ucode service-action-begin-if-idle reload test)"
 [ -n "$job_id" ] || fail "service-action-begin-if-idle should create a job"
-service_state="$FORKOP_UI_SERVICE_ACTION_DIR/$job_id.json"
+service_state="$TRAFIRA_UI_SERVICE_ACTION_DIR/$job_id.json"
 [ -f "$service_state" ] || fail "service action state file should be created"
 assert_eq "reload" \
   "$(ui_ucode active-service-action)" \
@@ -266,11 +266,11 @@ fi
 ui_ucode service-action-update-pid "$job_id" "$$" >/dev/null ||
   fail "service-action-update-pid should update running job"
 
-FORKOP_UI_SERVICE_ACTION_TIMEOUT_SECONDS=1 \
-FORKOP_UI_SERVICE_ACTION_SETTLE_SECONDS=0 \
-FORKOP_SERVICE_INIT=/bin/true \
-FORKOP_BIN=/bin/true \
-FORKOP_LIB="$FORKOP_FILES/usr/lib" \
+TRAFIRA_UI_SERVICE_ACTION_TIMEOUT_SECONDS=1 \
+TRAFIRA_UI_SERVICE_ACTION_SETTLE_SECONDS=0 \
+TRAFIRA_SERVICE_INIT=/bin/true \
+TRAFIRA_BIN=/bin/true \
+TRAFIRA_LIB="$TRAFIRA_FILES/usr/lib" \
   ui_ucode service-action-finish-after-command reload "$job_id" 0 >/dev/null ||
   fail "service-action-finish-after-command should spawn waiter without ucode declaration-order failure"
 
@@ -291,8 +291,8 @@ if (value.running !== false || value.success !== true || value.message !== "done
 }
 NODE
 
-component_job="$FORKOP_UI_COMPONENT_ACTION_DIR/component-1.json"
-mkdir -p "$FORKOP_UI_COMPONENT_ACTION_DIR"
+component_job="$TRAFIRA_UI_COMPONENT_ACTION_DIR/component-1.json"
+mkdir -p "$TRAFIRA_UI_COMPONENT_ACTION_DIR"
 printf '%s\n' '{"running":true,"component":"sing_box","started_at":100}' >"$component_job"
 ui_ucode component-action-running-for sing_box >/dev/null ||
   fail "component-action-running-for should detect running sing-box component action"

@@ -2,9 +2,9 @@
 set -eo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-FORKOP_LIB="$ROOT_DIR/forkop/files/usr/lib"
-ACTION_UC="$FORKOP_LIB/components/action.uc"
-UPDATER="$FORKOP_LIB/components/updater.uc"
+TRAFIRA_LIB="$ROOT_DIR/trafira/files/usr/lib"
+ACTION_UC="$TRAFIRA_LIB/components/action.uc"
+UPDATER="$TRAFIRA_LIB/components/updater.uc"
 WORK_DIR="$(mktemp -d)"
 
 cleanup() {
@@ -168,10 +168,10 @@ chmod +x "$fake_bin/curl" "$fake_bin/opkg" "$fake_bin/logger" "$fake_bin/unzip"
 component_action() {
   set +e
   PATH="$fake_bin:$PATH" \
-  FORKOP_LIB="$fake_lib" \
-  FORKOP_RUNTIME_STATE_DIR="$WORK_DIR/state" \
-  FORKOP_BIN="$WORK_DIR/missing-forkop" \
-  FORKOP_SERVICE_INIT="$WORK_DIR/missing-init" \
+  TRAFIRA_LIB="$fake_lib" \
+  TRAFIRA_RUNTIME_STATE_DIR="$WORK_DIR/state" \
+  TRAFIRA_BIN="$WORK_DIR/missing-trafira" \
+  TRAFIRA_SERVICE_INIT="$WORK_DIR/missing-init" \
   FAKE_CURL_LOG="$WORK_DIR/curl.log" \
   FAKE_PKG_LOG="$WORK_DIR/pkg.log" \
   FAKE_RELEASE_JSON="$WORK_DIR/release.json" \
