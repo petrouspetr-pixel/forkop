@@ -2,7 +2,7 @@
 set -eo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-FORKOP_LIB="$ROOT_DIR/forkop/files/usr/lib"
+TRAFIRA_LIB="$ROOT_DIR/trafira/files/usr/lib"
 WORK_DIR="$(mktemp -d)"
 trap 'rm -rf "$WORK_DIR"' EXIT
 
@@ -11,7 +11,7 @@ fail() {
   exit 1
 }
 
-ucode -L "$FORKOP_LIB" -e '
+ucode -L "$TRAFIRA_LIB" -e '
 let fs = require("fs");
 let dns = require("singbox.dns");
 function assert(value, message) { if (!value) { warn("FAIL: ", message, "\n"); exit(1); } }
@@ -24,8 +24,8 @@ let settings = {
     bootstrap_dns_server: [ "media.example.com", "8.8.8.8" ],
     dns_mtls_enabled: "1",
     dns_mtls_host: "media.EXAMPLE.com",
-    dns_mtls_client_certificate: "/etc/forkop/dns/client.crt",
-    dns_mtls_client_key: "/etc/forkop/dns/client.key"
+    dns_mtls_client_certificate: "/etc/trafira/dns/client.crt",
+    dns_mtls_client_key: "/etc/trafira/dns/client.key"
 };
 assert(dns.mtls_validation_error(settings) == "", "case-insensitive configured hostname must validate");
 let config = dns.config(settings, {});
@@ -60,10 +60,10 @@ for (let key in [ "dns_mtls_enabled", "dns_mtls_host", "dns_mtls_client_certific
 assert(sprintf("%J", dns.config(disabled, {})) == sprintf("%J", dns.config(legacy, {})), "disabled mTLS must preserve legacy DNS config exactly");
 write_fixture("disabled", disabled);
 let changed = clone(settings);
-changed.dns_mtls_client_key = "/etc/forkop/dns/new.key";
+changed.dns_mtls_client_key = "/etc/trafira/dns/new.key";
 write_fixture("changed-key", changed);
 changed = clone(settings);
-changed.dns_mtls_client_certificate = "/etc/forkop/dns/new.crt";
+changed.dns_mtls_client_certificate = "/etc/trafira/dns/new.crt";
 write_fixture("changed-cert", changed);
 changed = clone(settings);
 changed.dns_mtls_host = "other.example.com";
@@ -94,7 +94,7 @@ for (let item in cases) {
 ' "$WORK_DIR"
 
 validate() {
-  FORKOP_LIB="$FORKOP_LIB" ucode -L "$FORKOP_LIB" "$FORKOP_LIB/config/validator.uc" validate-runtime-fixture "$1" '{}'
+  TRAFIRA_LIB="$TRAFIRA_LIB" ucode -L "$TRAFIRA_LIB" "$TRAFIRA_LIB/config/validator.uc" validate-runtime-fixture "$1" '{}'
 }
 
 validate "$WORK_DIR/valid.json"
@@ -107,7 +107,7 @@ for fixture in "$WORK_DIR"/invalid-*.json; do
 done
 
 signature() {
-  ucode -L "$FORKOP_LIB" "$FORKOP_LIB/service/state.uc" sing-box-signature-body-fixture "$1"
+  ucode -L "$TRAFIRA_LIB" "$TRAFIRA_LIB/service/state.uc" sing-box-signature-body-fixture "$1"
 }
 valid_signature="$(signature "$WORK_DIR/valid.json")"
 [ "$valid_signature" != "$(signature "$WORK_DIR/disabled.json")" ] || fail "mTLS toggle must change reload signature"
@@ -115,14 +115,14 @@ valid_signature="$(signature "$WORK_DIR/valid.json")"
 [ "$valid_signature" != "$(signature "$WORK_DIR/changed-cert.json")" ] || fail "certificate path must change reload signature"
 [ "$valid_signature" != "$(signature "$WORK_DIR/changed-host.json")" ] || fail "mTLS host must change reload signature"
 
-FORKOP_LIB="$FORKOP_LIB" FORKOP_DNS_FAILOVER_STATE_FILE="$WORK_DIR/no-state.json" \
-  ucode -L "$FORKOP_LIB" "$FORKOP_LIB/singbox/generator.uc" generate-config-fixture "$WORK_DIR/valid.json" "$WORK_DIR/generated.json" 192.168.1.1 0
+TRAFIRA_LIB="$TRAFIRA_LIB" TRAFIRA_DNS_FAILOVER_STATE_FILE="$WORK_DIR/no-state.json" \
+  ucode -L "$TRAFIRA_LIB" "$TRAFIRA_LIB/singbox/generator.uc" generate-config-fixture "$WORK_DIR/valid.json" "$WORK_DIR/generated.json" 192.168.1.1 0
 ucode -e '
 let fs = require("fs");
 let config = json(fs.readfile(ARGV[0]));
 let count = 0;
 for (let server in config.dns.servers)
-    if (server.tls && server.tls.client_key_path == "/etc/forkop/dns/client.key") count++;
+    if (server.tls && server.tls.client_key_path == "/etc/trafira/dns/client.key") count++;
 if (count != 2) { warn("FAIL: generated main and main-health DNS must have mTLS\n"); exit(1); }
 ' "$WORK_DIR/generated.json"
 

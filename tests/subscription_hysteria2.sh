@@ -2,9 +2,9 @@
 set -eo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-FORKOP_LIB="$ROOT_DIR/forkop/files/usr/lib"
-PARSER="$ROOT_DIR/forkop/files/usr/lib/subscription/parser.uc"
-GENERATOR="$ROOT_DIR/forkop/files/usr/lib/singbox/generator.uc"
+TRAFIRA_LIB="$ROOT_DIR/trafira/files/usr/lib"
+PARSER="$ROOT_DIR/trafira/files/usr/lib/subscription/parser.uc"
+GENERATOR="$ROOT_DIR/trafira/files/usr/lib/singbox/generator.uc"
 WORK_DIR="$(mktemp -d)"
 
 cleanup() {
@@ -146,7 +146,7 @@ cat >"$generator_fixture" <<'JSON'
 }
 JSON
 TMP_SUBSCRIPTION_FOLDER="$WORK_DIR/subscriptions" \
-  ucode -L "$FORKOP_LIB" "$GENERATOR" generate-config-fixture \
+  ucode -L "$TRAFIRA_LIB" "$GENERATOR" generate-config-fixture \
     "$generator_fixture" "$generator_output" "127.0.0.1" "0"
 assert_contains "$generator_output" '"type": "hysteria2"' "generated stale HY2 type"
 if grep -Fq '"utls"' "$generator_output"; then

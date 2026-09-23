@@ -1,7 +1,7 @@
 .idea
-fe-app-forkop/node_modules
-fe-app-forkop/.yarn/
-fe-app-forkop/.env
+fe-app-trafira/node_modules
+fe-app-trafira/.yarn/
+fe-app-trafira/.env
 .DS_Store
 
 sandbox/

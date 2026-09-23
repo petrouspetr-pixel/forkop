@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -eo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-node - "$ROOT_DIR/luci-app-forkop/htdocs/luci-static/resources/view/forkop/section.js" <<'NODE'
+node - "$ROOT_DIR/luci-app-trafira/htdocs/luci-static/resources/view/trafira/section.js" <<'NODE'
 const fs = require('fs');
 const assert = require('assert');
 const source = fs.readFileSync(process.argv[2], 'utf8');

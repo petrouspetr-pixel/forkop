@@ -58,7 +58,7 @@ jobs:
           PY
 
   build:
-    name: Build Forkop release packages
+    name: Build Trafira release packages
     runs-on: ubuntu-24.04
     needs: preparation
     steps:
@@ -110,7 +110,7 @@ jobs:
           draft: false
           prerelease: false
           make_latest: true
-          name: ${{ needs.preparation.outputs.version }}
-          tag_name: ${{ needs.preparation.outputs.version }}
+          name: Trafira ${{ needs.preparation.outputs.version }}
+          tag_name: Trafira ${{ needs.preparation.outputs.version }}
           target_commitish: ${{ needs.preparation.outputs.commitish }}
           body: ${{ needs.preparation.outputs.release_notes }}

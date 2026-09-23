@@ -1,0 +1,85 @@
+{
+  "luci-app-trafira": {
+    "description": "Grant UCI and RPC access to LuCI app Trafira",
+    "read": {
+      "file": {
+        "/etc/init.d/trafira": [
+          "exec"
+        ],
+        "/var/run/trafira/section-cache/*": [
+          "read"
+        ],
+        "/tmp/run/trafira/section-cache/*": [
+          "read"
+        ],
+        "/var/run/trafira/component-actions/*": [
+          "read"
+        ],
+        "/tmp/run/trafira/component-actions/*": [
+          "read"
+        ],
+        "/var/run/trafira/ui-state/*": [
+          "read"
+        ],
+        "/tmp/run/trafira/ui-state/*": [
+          "read"
+        ],
+        "/var/run/trafira/ui-state/service-actions/*": [
+          "read"
+        ],
+        "/tmp/run/trafira/ui-state/service-actions/*": [
+          "read"
+        ],
+        "/var/run/trafira/ui-state/latency-actions/*": [
+          "read"
+        ],
+        "/tmp/run/trafira/ui-state/latency-actions/*": [
+          "read"
+        ],
+        "/usr/bin/trafira": [
+          "exec"
+        ]
+      },
+      "ubus": {
+        "luci-rpc": [
+          "getDHCPLeases",
+          "getHostHints"
+        ],
+        "network.interface": [
+          "dump"
+        ],
+        "service": [
+          "list"
+        ]
+      },
+      "uci": [
+        "trafira"
+      ]
+    },
+    "write": {
+      "file": {
+        "/var/run/trafira/ui-state/*": [
+          "write"
+        ],
+        "/tmp/run/trafira/ui-state/*": [
+          "write"
+        ],
+        "/var/run/trafira/ui-state/service-actions/*": [
+          "write"
+        ],
+        "/tmp/run/trafira/ui-state/service-actions/*": [
+          "write"
+        ],
+        "/var/run/trafira/ui-state/latency-actions/*": [
+          "write"
+        ],
+        "/tmp/run/trafira/ui-state/latency-actions/*": [
+          "write"
+        ]
+      },
+      "uci": [
+        "trafira"
+      ]
+    }
+  }
+}
