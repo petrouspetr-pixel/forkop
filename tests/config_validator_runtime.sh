@@ -171,6 +171,20 @@ cat >"$WORK_DIR/bad-dns-duration.json" <<'JSON'
 JSON
 assert_rejects "bad DNS interval" "$WORK_DIR/bad-dns-duration.json" "settings.dns_check_interval"
 
+cat >"$WORK_DIR/bad-dns-threshold.json" <<'JSON'
+{
+  "settings": {
+    ".name": "settings",
+    ".type": "settings",
+    "dns_server": [ "1.1.1.1", "8.8.8.8" ],
+    "bootstrap_dns_server": [ "77.88.8.8" ],
+    "dns_failure_threshold": "0"
+  },
+  "section": []
+}
+JSON
+assert_rejects "bad DNS threshold" "$WORK_DIR/bad-dns-threshold.json" "dns_failure_threshold"
+
 cat >"$WORK_DIR/bad-dns-server.json" <<'JSON'
 {
   "settings": {
@@ -450,6 +464,7 @@ runtime_lib="$WORK_DIR/runtime-lib"
 mkdir -p "$runtime_lib"
 ln -s "$FORKOP_LIB/core" "$runtime_lib/core"
 ln -s "$FORKOP_LIB/config" "$runtime_lib/config"
+ln -s "$FORKOP_LIB/singbox" "$runtime_lib/singbox"
 ln -s "$FORKOP_LIB/subscription" "$runtime_lib/subscription"
 ln -s "$FORKOP_LIB/providers" "$runtime_lib/providers"
 touch "$WORK_DIR/ciadpi-provider"

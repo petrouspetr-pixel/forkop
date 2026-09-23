@@ -12,6 +12,8 @@ let runtime_constants = require("singbox.constants");
 const CONFIG_NAME = getenv("FORKOP_CONFIG_NAME") || "forkop";
 const DNS_SOURCE_SET = "forkop_dns_sources";
 const DNS_SOURCE6_SET = "forkop_dns_sources6";
+const BYEDPI_RUNTIME_USER = getenv("BYEDPI_RUNTIME_USER") || "forkopbyedpi";
+const BYEDPI_RUNTIME_UID_OVERRIDE = getenv("BYEDPI_RUNTIME_UID") || "";
 
 let common_read_json_file = common.read_json_file;
 let list_option = common.list_option;
@@ -135,6 +137,16 @@ function command_output_quiet_from_args(args) {
 
     return as_string(data);
 }
+
+function byedpi_runtime_uid() {
+    let uid = trim(as_string(BYEDPI_RUNTIME_UID_OVERRIDE));
+    if (match(uid, /^[0-9]+$/) != null)
+        return uid;
+
+    uid = trim(command_output_quiet_from_args([ "id", "-u", BYEDPI_RUNTIME_USER ]));
+    return match(uid, /^[0-9]+$/) != null ? uid : "";
+}
+
 
 function log_debug(message) {
     run_args([ "logger", "-t", "forkop", "[debug] " + as_string(message) ]);
@@ -470,6 +482,18 @@ function nft_add_rule(table, chain, args) {
     for (let arg in args)
         push(command, arg);
     return run_args(command);
+}
+
+function nft_add_byedpi_runtime_owner_rule(table, outbound_mark) {
+    let uid = byedpi_runtime_uid();
+    if (uid == "")
+        return true;
+
+    return nft_add_rule(table, "mangle_output", [
+        "meta", "skuid", uid,
+        "meta", "mark", "set", outbound_mark,
+        "counter", "return"
+    ]);
 }
 
 function nft_insert_rule(table, chain, args) {
@@ -857,6 +881,7 @@ function nft_create_runtime_base(table, localv4_set, common_set, port_set, ip_po
         !nft_add_rule(table, "proxy", [ "meta", "mark", "&", fakeip_mark, "==", fakeip_mark, "meta", "l4proto", "udp", "tproxy", "ip6", "to", core_ip.format_ipv6_tproxy_target(tproxy6_address, tproxy_port), "counter" ]) ||
         !nft_add_rule(table, "mangle_output", [ "ip", "daddr", "@" + as_string(localv4_set), "return" ]) ||
         !nft_add_rule(table, "mangle_output", [ "ip6", "daddr", "@" + as_string(localv6_set), "ip6", "daddr", "!=", fakeip6_range, "return" ]) ||
+        !nft_add_byedpi_runtime_owner_rule(table, outbound_mark) ||
         !nft_add_rule(table, "mangle_output", [ "meta", "mark", outbound_mark, "counter", "return" ]) ||
         !nft_add_rule(table, "mangle_output", [ "jump", "priority_output_rules" ]))
         return false;
@@ -1295,6 +1320,13 @@ function ensure_rt_table_entry(path, table_id, table_name) {
     return write_text_file(path, data + as_string(table_id) + " " + as_string(table_name) + "\n");
 }
 
+function tproxy_ipv6_enabled() {
+    let all_disabled = trim(command_output_quiet_from_args([ "sysctl", "-n", "net.ipv6.conf.all.disable_ipv6" ]));
+    let lo_disabled = trim(command_output_quiet_from_args([ "sysctl", "-n", "net.ipv6.conf.lo.disable_ipv6" ]));
+
+    return all_disabled != "1" && lo_disabled != "1";
+}
+
 function tproxy_route4_present(table) {
     return has_local_default_route_text(command_output_quiet_from_args([ "ip", "route", "list", "table", table ]), 4);
 }
@@ -1304,7 +1336,8 @@ function tproxy_route6_present(table) {
 }
 
 function tproxy_route_present(table) {
-    return tproxy_route4_present(table) && tproxy_route6_present(table);
+    return tproxy_route4_present(table) &&
+        (!tproxy_ipv6_enabled() || tproxy_route6_present(table));
 }
 
 function tproxy_marking_rule4_present(table, mark) {
@@ -1316,7 +1349,8 @@ function tproxy_marking_rule6_present(table, mark) {
 }
 
 function tproxy_marking_rule_present(table, mark) {
-    return tproxy_marking_rule4_present(table, mark) && tproxy_marking_rule6_present(table, mark);
+    return tproxy_marking_rule4_present(table, mark) &&
+        (!tproxy_ipv6_enabled() || tproxy_marking_rule6_present(table, mark));
 }
 
 function tproxy_route_rule_present(table, mark) {
@@ -1325,6 +1359,7 @@ function tproxy_route_rule_present(table, mark) {
 
 function ensure_tproxy_route_rule(table, mark, rt_tables_path) {
     rt_tables_path = as_string(rt_tables_path || "/etc/iproute2/rt_tables");
+    let ipv6_enabled = tproxy_ipv6_enabled();
 
     if (!ensure_rt_table_entry(rt_tables_path, "105", table)) {
         log_fatal("Failed to update route table registry. Aborted.");
@@ -1342,7 +1377,10 @@ function ensure_tproxy_route_rule(table, mark, rt_tables_path) {
         log_debug("IPv4 TPROXY route already exists");
     }
 
-    if (!tproxy_route6_present(table)) {
+    if (!ipv6_enabled) {
+        log_debug("IPv6 is disabled; skipping IPv6 TPROXY route");
+    }
+    else if (!tproxy_route6_present(table)) {
         log_debug("Added IPv6 TPROXY route");
         if (!run_args([ "ip", "-6", "route", "add", "local", "::/0", "dev", "lo", "table", table ]) && !tproxy_route6_present(table)) {
             log_fatal("Failed to add IPv6 route for tproxy. Aborted.");
@@ -1364,7 +1402,10 @@ function ensure_tproxy_route_rule(table, mark, rt_tables_path) {
         log_debug("IPv4 TPROXY marking rule already exists");
     }
 
-    if (!tproxy_marking_rule6_present(table, mark)) {
+    if (!ipv6_enabled) {
+        log_debug("IPv6 is disabled; skipping IPv6 TPROXY marking rule");
+    }
+    else if (!tproxy_marking_rule6_present(table, mark)) {
         log_debug("Creating IPv6 TPROXY marking rule");
         if (!run_args([ "ip", "-6", "rule", "add", "fwmark", as_string(mark) + "/" + as_string(mark), "table", table, "priority", "105" ]) && !tproxy_marking_rule6_present(table, mark)) {
             log_fatal("Failed to create IPv6 marking rule. Aborted.");

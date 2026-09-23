@@ -662,7 +662,10 @@ function mwan3_has_enabled_interface() {
 }
 
 function mwan3_has_enabled_interface_from_sections() {
-    for (let section in uci_core().section_objects("mwan3", "interface"))
+    if (uci_core_module == null)
+        uci_core_module = require("core.uci");
+    let core = uci_core_module;
+    for (let section in core.section_objects("mwan3", "interface"))
         if (option(section, "enabled", "0") == "1")
             return true;
     return false;
@@ -896,6 +899,10 @@ function dns_setting_values(settings, key) {
 }
 
 function validate_dns_settings(settings, sections, context) {
+    let dns = require("singbox.dns");
+    let mtls_error = dns.mtls_validation_error(settings);
+    if (mtls_error != "")
+        fail_validation(mtls_error + " Aborted.");
     let dns_type = option(settings, "dns_type", "udp");
     if (!contains([ "udp", "dot", "doh" ], dns_type))
         fail_validation("Unsupported DNS protocol type '" + dns_type + "'. Use udp, dot, or doh. Aborted.");
@@ -921,6 +928,11 @@ function validate_dns_settings(settings, sections, context) {
         validate_required_duration_option(option(settings, "dns_check_interval", "10s"), "settings.dns_check_interval");
         validate_required_duration_option(option(settings, "dns_recovery_check_interval", "60s"), "settings.dns_recovery_check_interval");
         validate_required_duration_option(option(settings, "dns_check_timeout", "2s"), "settings.dns_check_timeout");
+        for (let name in [ "dns_failure_threshold", "dns_recovery_threshold" ]) {
+            let value = trim(option(settings, name, "3"));
+            if (match(value, /^[0-9]+$/) == null || int(value) < 1 || int(value) > 10)
+                fail_validation("Invalid " + name + " value '" + value + "'. Use a number from 1 to 10. Aborted.");
+        }
     }
 
     if (!bool_option(settings, "dns_detour_enabled", false))
@@ -1110,19 +1122,34 @@ function validate_priority_level_order(value, section, group_id, level_id) {
     fail_validation("Invalid priority level order '" + value + "' in rule '" + section + "', priority '" + group_id + "', level '" + level_id + "'. Use a non-negative integer. Aborted.");
 }
 
+function validate_priority_group_implementation(value, section, group_id) {
+    value = trim(as_string(value));
+    if (value == "watchdog" || value == "native_fallback")
+        return;
+
+    fail_validation("Invalid priority implementation '" + value + "' in rule '" + section + "', priority '" + group_id + "'. Use watchdog or native_fallback. Aborted.");
+}
+
 function validate_priority_group(section, group_id) {
     let name = section_name(section);
     validate_priority_identifier_value(group_id, name);
+    let implementation = connections.priority_group_implementation(section, group_id);
 
     if (trim(connections.priority_group_display_name(section, group_id)) == "")
         fail_validation("Priority group '" + group_id + "' in rule '" + name + "' has no display name. Aborted.");
 
-    validate_http_url_option(connections.priority_group_health_url(section, group_id), "rule." + name + ".priority." + group_id + ".health_url");
-    validate_required_duration_option(connections.priority_group_active_check_interval(section, group_id), "rule." + name + ".priority." + group_id + ".active_check_interval");
-    validate_required_duration_option(connections.priority_group_check_timeout(section, group_id), "rule." + name + ".priority." + group_id + ".check_timeout");
-    validate_required_duration_option(connections.priority_group_recovery_check_interval(section, group_id), "rule." + name + ".priority." + group_id + ".recovery_check_interval");
-    if (connections.priority_group_switch_to_faster_same_priority(section, group_id))
-        validate_required_duration_option(connections.priority_group_fastest_check_interval(section, group_id), "rule." + name + ".priority." + group_id + ".fastest_check_interval");
+    validate_priority_group_implementation(implementation, name, group_id);
+    if (implementation == "native_fallback") {
+        validate_required_duration_option(connections.priority_group_blacklist_timeout(section, group_id), "rule." + name + ".priority." + group_id + ".blacklist_timeout");
+    }
+    else {
+        validate_http_url_option(connections.priority_group_health_url(section, group_id), "rule." + name + ".priority." + group_id + ".health_url");
+        validate_required_duration_option(connections.priority_group_active_check_interval(section, group_id), "rule." + name + ".priority." + group_id + ".active_check_interval");
+        validate_required_duration_option(connections.priority_group_check_timeout(section, group_id), "rule." + name + ".priority." + group_id + ".check_timeout");
+        validate_required_duration_option(connections.priority_group_recovery_check_interval(section, group_id), "rule." + name + ".priority." + group_id + ".recovery_check_interval");
+        if (connections.priority_group_switch_to_faster_same_priority(section, group_id))
+            validate_required_duration_option(connections.priority_group_fastest_check_interval(section, group_id), "rule." + name + ".priority." + group_id + ".fastest_check_interval");
+    }
 
     for (let level_id in connections.priority_levels(group_id)) {
         validate_priority_identifier_value(level_id, name);
@@ -2142,6 +2169,8 @@ else if (mode == "dhcp-has-https-dns-proxy-options")
     dhcp_has_https_dns_proxy_options_exit(ARGV[1]);
 else if (mode == "mwan3-has-enabled-interface")
     exit(mwan3_has_enabled_interface() ? 0 : 1);
+else if (mode == "mwan3-has-enabled-interface-from-sections")
+    exit(mwan3_has_enabled_interface_from_sections() ? 0 : 1);
 else if (mode == "mwan3-is-active")
     exit(mwan3_is_active() ? 0 : 1);
 else if (mode == "check-requirements")

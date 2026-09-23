@@ -564,6 +564,10 @@ msgstr ""
 msgid "Currently unavailable"
 msgstr ""
 
+#: ../luci-app-forkop/htdocs/luci-static/resources/view/forkop/section.js:2413
+msgid "Custom device headers"
+msgstr ""
+
 #: ../luci-app-forkop/htdocs/luci-static/resources/view/forkop/section.js:7367
 msgid "Custom outbound configurations in JSON format"
 msgstr ""
@@ -1064,8 +1068,8 @@ msgstr ""
 msgid "Fastest"
 msgstr ""
 
-#: ../luci-app-forkop/htdocs/luci-static/resources/view/forkop/section.js:3142
-msgid "Filter the servers that will be displayed on the dashboard."
+#: ../luci-app-forkop/htdocs/luci-static/resources/view/forkop/section.js:3164
+msgid "Filter the servers that will be displayed on the dashboard. Excluded servers are also removed from the URLTest and Priority groups of this section."
 msgstr ""
 
 #: src/forkop/tabs/diagnostic/checks/runInboundsCheck.ts:136
@@ -1171,6 +1175,15 @@ msgstr ""
 
 #: ../luci-app-forkop/htdocs/luci-static/resources/view/forkop/section.js:5901
 msgid "Fuzzing is not supported here because Forkop needs deterministic runtime validation."
+msgstr ""
+
+#: ../luci-app-forkop/htdocs/luci-static/resources/view/forkop/section.js:2401
+msgid "Generate a random 16-character hexadecimal HWID"
+msgstr ""
+
+#: ../luci-app-forkop/htdocs/luci-static/resources/view/forkop/section.js:2400
+#: ../luci-app-forkop/htdocs/luci-static/resources/view/forkop/section.js:2405
+msgid "Generate HWID"
 msgstr ""
 
 #: ../luci-app-forkop/htdocs/luci-static/resources/view/forkop/section.js:2325
@@ -1684,6 +1697,10 @@ msgstr ""
 msgid "Latest version:"
 msgstr ""
 
+#: ../luci-app-forkop/htdocs/luci-static/resources/view/forkop/section.js:2431
+msgid "Leave empty to omit this header"
+msgstr ""
+
 #: src/forkop/tabs/dashboard/initController.ts:1100
 msgid "Level"
 msgstr ""
@@ -2023,6 +2040,10 @@ msgstr ""
 
 #: ../luci-app-forkop/htdocs/luci-static/resources/view/forkop/settings.js:313
 msgid "Output Network Interface"
+msgstr ""
+
+#: ../luci-app-forkop/htdocs/luci-static/resources/view/forkop/section.js:2414
+msgid "Override the default OpenWrt device headers for this subscription"
 msgstr ""
 
 #: ../luci-app-forkop/htdocs/luci-static/resources/view/forkop/server.js:2982
@@ -3306,4 +3327,60 @@ msgstr ""
 
 #: src/forkop/tabs/diagnostic/checks/runZapret2Check.ts:107
 msgid "Zapret2 sing-box outbound is not configured"
+msgstr ""
+
+#: ../luci-app-forkop/htdocs/luci-static/resources/view/forkop/settings.js:229
+msgid "DNS Failures Before Switching"
+msgstr ""
+
+#: ../luci-app-forkop/htdocs/luci-static/resources/view/forkop/settings.js:237
+msgid "DNS Successful Checks Before Recovery"
+msgstr ""
+
+#: ../luci-app-forkop/htdocs/luci-static/resources/view/forkop/settings.js:230
+msgid "Number of consecutive failed checks required before switching DNS servers."
+msgstr ""
+
+#: ../luci-app-forkop/htdocs/luci-static/resources/view/forkop/settings.js:238
+msgid "Number of consecutive successful checks required before returning to a higher-priority DNS server."
+msgid "Failover implementation"
+msgstr ""
+
+msgid "Forkop watchdog"
+msgstr ""
+
+msgid "Failed server retry interval"
+msgstr ""
+
+msgid "After a connection failure, retry the skipped server after this duration"
+msgstr ""
+
+msgid "Native fallback (sing-box extended)"
+msgstr ""
+
+msgid "Native fallback reacts to real connection failures and requires sing-box extended. The watchdog mode works with all supported sing-box variants."
+msgstr ""
+
+msgid "DoH client certificate authentication"
+msgstr ""
+
+msgid "Use a client certificate only for the specified main DoH server."
+msgstr ""
+
+msgid "DoH certificate hostname"
+msgstr ""
+
+msgid "Hostname of a configured main DoH server, without a scheme, port or path."
+msgstr ""
+
+msgid "Client certificate file"
+msgstr ""
+
+msgid "Client private key file"
+msgstr ""
+
+msgid "Absolute path to an existing file on the router. Enter the path, not the file contents."
+msgstr ""
+
+msgid "Enter an absolute file path"
 msgstr ""

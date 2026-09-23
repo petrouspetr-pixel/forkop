@@ -383,6 +383,9 @@ msgstr "Текущую секцию нельзя выбрать для скач�
 msgid "Currently unavailable"
 msgstr "Временно недоступно"
 
+msgid "Custom device headers"
+msgstr "Пользовательские заголовки устройства"
+
 msgid "Custom outbound configurations in JSON format"
 msgstr "Пользовательские конфигурации outbound в формате JSON"
 
@@ -725,8 +728,8 @@ msgstr "Интервал поиска более быстрого сервера
 msgid "Fastest"
 msgstr "Самый быстрый"
 
-msgid "Filter the servers that will be displayed on the dashboard."
-msgstr "Отфильтровать серверы, которые будут отображаться в дашборде."
+msgid "Filter the servers that will be displayed on the dashboard. Excluded servers are also removed from the URLTest and Priority groups of this section."
+msgstr "Отфильтровать серверы, которые будут отображаться в дашборде. Исключённые серверы также убираются из URLTest и Приоритет групп этой секции."
 
 msgid "Firewall WAN port"
 msgstr "Порт в firewall для WAN"
@@ -805,6 +808,12 @@ msgstr "Proxy protocol для фронтинга"
 
 msgid "Fuzzing is not supported here because Forkop needs deterministic runtime validation."
 msgstr "Fuzzing здесь не поддерживается, потому что Forkop нужна предсказуемая runtime-валидация."
+
+msgid "Generate a random 16-character hexadecimal HWID"
+msgstr "Создать случайный 16-значный шестнадцатеричный HWID"
+
+msgid "Generate HWID"
+msgstr "Создать HWID"
 
 msgid "Generate HWID from router hardware information for this subscription"
 msgstr "Генерировать HWID из аппаратной информации роутера для этой подписки"
@@ -1166,6 +1175,9 @@ msgstr "Установлена последняя версия"
 msgid "Latest version:"
 msgstr "Последняя версия:"
 
+msgid "Leave empty to omit this header"
+msgstr "Оставьте пустым, чтобы не отправлять этот заголовок"
+
 msgid "Level"
 msgstr "Уровень"
 
@@ -1393,6 +1405,9 @@ msgstr "outbounds должен быть непустым массивом стр
 
 msgid "Output Network Interface"
 msgstr "Выходной сетевой интерфейс"
+
+msgid "Override the default OpenWrt device headers for this subscription"
+msgstr "Заменить стандартные заголовки устройства OpenWrt для этой подписки"
 
 msgid "Padding"
 msgstr "Padding"
@@ -2275,3 +2290,56 @@ msgstr "sing-box outbound для Zapret2 настроен"
 
 msgid "Zapret2 sing-box outbound is not configured"
 msgstr "sing-box outbound для Zapret2 не настроен"
+
+msgid "DNS Failures Before Switching"
+msgstr "Ошибок DNS перед переключением"
+
+msgid "DNS Successful Checks Before Recovery"
+msgstr "Успешных проверок DNS перед восстановлением"
+
+msgid "Number of consecutive failed checks required before switching DNS servers."
+msgstr "Количество последовательных неудачных проверок, необходимое для переключения DNS-сервера."
+
+msgid "Number of consecutive successful checks required before returning to a higher-priority DNS server."
+msgstr "Количество последовательных успешных проверок, необходимое для возврата к DNS-серверу с более высоким приоритетом."
+msgid "Failover implementation"
+msgstr "Реализация переключения при сбое"
+
+msgid "Forkop watchdog"
+msgstr "Контроль Forkop"
+
+msgid "Failed server retry interval"
+msgstr "Интервал повторной попытки для недоступного сервера"
+
+msgid "After a connection failure, retry the skipped server after this duration"
+msgstr "После ошибки соединения повторять попытку через этот интервал"
+
+msgid "Native fallback (sing-box extended)"
+msgstr "Нативный fallback (sing-box extended)"
+
+msgid "Native fallback reacts to real connection failures and requires sing-box extended. The watchdog mode works with all supported sing-box variants."
+msgstr "Нативный fallback реагирует на реальные ошибки соединения и требует sing-box extended. Режим контроля Forkop работает со всеми поддерживаемыми вариантами sing-box."
+
+msgid "DoH client certificate authentication"
+msgstr "Аутентификация DoH клиентским сертификатом"
+
+msgid "Use a client certificate only for the specified main DoH server."
+msgstr "Использовать клиентский сертификат только для указанного основного DoH-сервера."
+
+msgid "DoH certificate hostname"
+msgstr "Имя хоста для сертификата DoH"
+
+msgid "Hostname of a configured main DoH server, without a scheme, port or path."
+msgstr "Имя хоста настроенного основного DoH-сервера без протокола, порта и пути."
+
+msgid "Client certificate file"
+msgstr "Файл клиентского сертификата"
+
+msgid "Client private key file"
+msgstr "Файл закрытого ключа клиента"
+
+msgid "Absolute path to an existing file on the router. Enter the path, not the file contents."
+msgstr "Абсолютный путь к существующему файлу на роутере. Введите путь, а не содержимое файла."
+
+msgid "Enter an absolute file path"
+msgstr "Введите абсолютный путь к файлу"

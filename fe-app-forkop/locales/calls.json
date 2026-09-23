@@ -914,6 +914,13 @@
     ]
   },
   {
+    "call": "Custom device headers",
+    "key": "Custom device headers",
+    "places": [
+      "../luci-app-forkop/htdocs/luci-static/resources/view/forkop/section.js:2413"
+    ]
+  },
+  {
     "call": "Custom outbound configurations in JSON format",
     "key": "Custom outbound configurations in JSON format",
     "places": [
@@ -1756,10 +1763,10 @@
     ]
   },
   {
-    "call": "Filter the servers that will be displayed on the dashboard.",
-    "key": "Filter the servers that will be displayed on the dashboard.",
+    "call": "Filter the servers that will be displayed on the dashboard. Excluded servers are also removed from the URLTest and Priority groups of this section.",
+    "key": "Filter the servers that will be displayed on the dashboard. Excluded servers are also removed from the URLTest and Priority groups of this section.",
     "places": [
-      "../luci-app-forkop/htdocs/luci-static/resources/view/forkop/section.js:3142"
+      "../luci-app-forkop/htdocs/luci-static/resources/view/forkop/section.js:3164"
     ]
   },
   {
@@ -1943,6 +1950,21 @@
     "key": "Fuzzing is not supported here because Forkop needs deterministic runtime validation.",
     "places": [
       "../luci-app-forkop/htdocs/luci-static/resources/view/forkop/section.js:5901"
+    ]
+  },
+  {
+    "call": "Generate a random 16-character hexadecimal HWID",
+    "key": "Generate a random 16-character hexadecimal HWID",
+    "places": [
+      "../luci-app-forkop/htdocs/luci-static/resources/view/forkop/section.js:2401"
+    ]
+  },
+  {
+    "call": "Generate HWID",
+    "key": "Generate HWID",
+    "places": [
+      "../luci-app-forkop/htdocs/luci-static/resources/view/forkop/section.js:2400",
+      "../luci-app-forkop/htdocs/luci-static/resources/view/forkop/section.js:2405"
     ]
   },
   {
@@ -2817,6 +2839,13 @@
     ]
   },
   {
+    "call": "Leave empty to omit this header",
+    "key": "Leave empty to omit this header",
+    "places": [
+      "../luci-app-forkop/htdocs/luci-static/resources/view/forkop/section.js:2431"
+    ]
+  },
+  {
     "call": "Level",
     "key": "Level",
     "places": [
@@ -3383,6 +3412,13 @@
     "key": "Output Network Interface",
     "places": [
       "../luci-app-forkop/htdocs/luci-static/resources/view/forkop/settings.js:313"
+    ]
+  },
+  {
+    "call": "Override the default OpenWrt device headers for this subscription",
+    "key": "Override the default OpenWrt device headers for this subscription",
+    "places": [
+      "../luci-app-forkop/htdocs/luci-static/resources/view/forkop/section.js:2414"
     ]
   },
   {
@@ -5548,6 +5584,140 @@
     "key": "Zapret2 sing-box outbound is not configured",
     "places": [
       "src/forkop/tabs/diagnostic/checks/runZapret2Check.ts:107"
+    ]
+  },
+  {
+    "call": "DNS Failures Before Switching",
+    "key": "DNS Failures Before Switching",
+    "places": [
+      "../luci-app-forkop/htdocs/luci-static/resources/view/forkop/settings.js:229"
+    ]
+  },
+  {
+    "call": "DNS Successful Checks Before Recovery",
+    "key": "DNS Successful Checks Before Recovery",
+    "places": [
+      "../luci-app-forkop/htdocs/luci-static/resources/view/forkop/settings.js:237"
+    ]
+  },
+  {
+    "call": "Number of consecutive failed checks required before switching DNS servers.",
+    "key": "Number of consecutive failed checks required before switching DNS servers.",
+    "places": [
+      "../luci-app-forkop/htdocs/luci-static/resources/view/forkop/settings.js:230"
+    ]
+  },
+  {
+    "call": "Number of consecutive successful checks required before returning to a higher-priority DNS server.",
+    "key": "Number of consecutive successful checks required before returning to a higher-priority DNS server.",
+    "places": [
+      "../luci-app-forkop/htdocs/luci-static/resources/view/forkop/settings.js:238"
+    ]
+  },
+  {
+    "call": "Filter the servers that will be displayed on the dashboard.",
+    "key": "Filter the servers that will be displayed on the dashboard.",
+    "places": [
+      "../luci-app-forkop/htdocs/luci-static/resources/view/forkop/section.js:3142"
+    ]
+  },
+  {
+    "call": "Failover implementation",
+    "key": "Failover implementation",
+    "places": [
+      "../luci-app-forkop/htdocs/luci-static/resources/view/forkop/section.js:2947"
+    ]
+  },
+  {
+    "call": "Forkop watchdog",
+    "key": "Forkop watchdog",
+    "places": [
+      "../luci-app-forkop/htdocs/luci-static/resources/view/forkop/section.js:2952"
+    ]
+  },
+  {
+    "call": "Failed server retry interval",
+    "key": "Failed server retry interval",
+    "places": [
+      "../luci-app-forkop/htdocs/luci-static/resources/view/forkop/section.js:2984",
+      "src/forkop/tabs/dashboard/initController.ts:1128"
+    ]
+  },
+  {
+    "call": "Native fallback (sing-box extended)",
+    "key": "Native fallback (sing-box extended)",
+    "places": [
+      "../luci-app-forkop/htdocs/luci-static/resources/view/forkop/section.js:2953"
+    ]
+  },
+  {
+    "call": "Native fallback reacts to real connection failures and requires sing-box extended. The watchdog mode works with all supported sing-box variants.",
+    "key": "Native fallback reacts to real connection failures and requires sing-box extended. The watchdog mode works with all supported sing-box variants.",
+    "places": [
+      "../luci-app-forkop/htdocs/luci-static/resources/view/forkop/section.js:2949"
+    ]
+  },
+  {
+    "call": "After a connection failure, retry the skipped server after this duration",
+    "key": "After a connection failure, retry the skipped server after this duration",
+    "places": [
+      "../luci-app-forkop/htdocs/luci-static/resources/view/forkop/section.js:2985"
+    ]
+  },
+  {
+    "call": "DoH client certificate authentication",
+    "key": "DoH client certificate authentication",
+    "places": [
+      "../luci-app-forkop/htdocs/luci-static/resources/view/forkop/settings.js:189"
+    ]
+  },
+  {
+    "call": "Use a client certificate only for the specified main DoH server.",
+    "key": "Use a client certificate only for the specified main DoH server.",
+    "places": [
+      "../luci-app-forkop/htdocs/luci-static/resources/view/forkop/settings.js:190"
+    ]
+  },
+  {
+    "call": "DoH certificate hostname",
+    "key": "DoH certificate hostname",
+    "places": [
+      "../luci-app-forkop/htdocs/luci-static/resources/view/forkop/settings.js:199"
+    ]
+  },
+  {
+    "call": "Hostname of a configured main DoH server, without a scheme, port or path.",
+    "key": "Hostname of a configured main DoH server, without a scheme, port or path.",
+    "places": [
+      "../luci-app-forkop/htdocs/luci-static/resources/view/forkop/settings.js:206"
+    ]
+  },
+  {
+    "call": "Client certificate file",
+    "key": "Client certificate file",
+    "places": [
+      "../luci-app-forkop/htdocs/luci-static/resources/view/forkop/settings.js:210"
+    ]
+  },
+  {
+    "call": "Client private key file",
+    "key": "Client private key file",
+    "places": [
+      "../luci-app-forkop/htdocs/luci-static/resources/view/forkop/settings.js:211"
+    ]
+  },
+  {
+    "call": "Absolute path to an existing file on the router. Enter the path, not the file contents.",
+    "key": "Absolute path to an existing file on the router. Enter the path, not the file contents.",
+    "places": [
+      "../luci-app-forkop/htdocs/luci-static/resources/view/forkop/settings.js:218"
+    ]
+  },
+  {
+    "call": "Enter an absolute file path",
+    "key": "Enter an absolute file path",
+    "places": [
+      "../luci-app-forkop/htdocs/luci-static/resources/view/forkop/settings.js:231"
     ]
   }
 ]

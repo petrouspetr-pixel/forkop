@@ -18,6 +18,8 @@ const BYEDPI_PORT_BASE = getenv("BYEDPI_PORT_BASE") || "1080";
 const BYEDPI_RESPAWN_DELAY = getenv("BYEDPI_RESPAWN_DELAY") || "5";
 const BYEDPI_OPEN_FILES_LIMIT = getenv("BYEDPI_OPEN_FILES_LIMIT") || "4096";
 const BYEDPI_DEFAULT_CMD_OPTS = getenv("BYEDPI_DEFAULT_CMD_OPTS") || "-o 2 --auto=t,r,a,s -d 2";
+const BYEDPI_RUNTIME_USER = getenv("BYEDPI_RUNTIME_USER") || "forkopbyedpi";
+const BYEDPI_RUNTIME_GROUP = getenv("BYEDPI_RUNTIME_GROUP") || "forkopbyedpi";
 const SB_TPROXY_INBOUND_TAG = getenv("SB_TPROXY_INBOUND_TAG") || "tproxy-in";
 
 function as_string(value) {
@@ -248,12 +250,26 @@ function stop_runtime() {
 }
 
 function supervisor_command(port, raw_opt, child_pidfile) {
-    let args = [ BYEDPI_BIN, "--ip", BYEDPI_LISTEN_ADDRESS, "--port", as_string(port) ];
+    let args = [
+        "start-stop-daemon",
+        "-S",
+        "-p", child_pidfile,
+        "-c", BYEDPI_RUNTIME_USER + ":" + BYEDPI_RUNTIME_GROUP,
+        "-x", BYEDPI_BIN,
+        "--",
+        "--ip", BYEDPI_LISTEN_ADDRESS,
+        "--port", as_string(port)
+    ];
     for (let word in strategy_words(raw_opt))
         push(args, word);
 
     return "ulimit -n " + shell_quote(BYEDPI_OPEN_FILES_LIMIT) + " >/dev/null 2>&1 || true; " +
-        command_from_args(args) + " & child=$!; echo $child > " + shell_quote(child_pidfile) + "; wait $child; rc=$?; rm -f " + shell_quote(child_pidfile) + "; exit $rc";
+        command_from_args(args) + " & child=$!; echo $child > " + shell_quote(child_pidfile) +
+        "; wait $child; rc=$?; rm -f " + shell_quote(child_pidfile) + "; exit $rc";
+}
+
+function runtime_user_available() {
+    return command_success_from_args([ "id", "-u", BYEDPI_RUNTIME_USER ]);
 }
 
 function supervisor(section, port, raw_opt, child_pidfile) {
@@ -288,6 +304,7 @@ function start_rule(section, index_value) {
     let command = command_from_args([
         "ucode",
         "-L", LIB_DIR,
+        "--",
         LIB_DIR + "/providers/byedpi/runtime.uc",
         "supervisor",
         name,
@@ -318,6 +335,15 @@ function start_runtime() {
     let sections = enabled_byedpi_sections();
     if (length(sections) == 0 || !provider_available())
         return;
+
+    if (!runtime_user_available()) {
+        log_message("Forkop ByeDPI runtime user '" + BYEDPI_RUNTIME_USER + "' is missing. Reinstall or upgrade the Forkop package before using action 'byedpi'. Aborted.", "fatal");
+        exit(1);
+    }
+    if (!command_exists("start-stop-daemon")) {
+        log_message("start-stop-daemon is unavailable; cannot drop privileges for Forkop-managed ciadpi. Aborted.", "fatal");
+        exit(1);
+    }
 
     if (standalone_service_enabled())
         log_message("Standalone byedpi service is enabled. Forkop manages ciadpi itself for action 'byedpi'; disable standalone byedpi autostart to avoid boot-time port conflicts.", "warn");
@@ -537,6 +563,8 @@ else if (mode == "stop-runtime")
     stop_runtime();
 else if (mode == "supervisor")
     supervisor(ARGV[1], ARGV[2], ARGV[3], ARGV[4]);
+else if (mode == "supervisor-command")
+    print(supervisor_command(ARGV[1], ARGV[2], ARGV[3]), "\n");
 else if (mode == "status")
     status_json();
 else if (mode == "check")
@@ -550,6 +578,6 @@ else if (mode == "package-version")
 else if (mode == "enabled-rule-count")
     print(enabled_rule_count(), "\n");
 else {
-    warn("Usage: providers/byedpi/runtime.uc <start-runtime|stop-runtime|status|check|installed|package-installed|package-version> ...\n");
+    warn("Usage: providers/byedpi/runtime.uc <start-runtime|stop-runtime|supervisor-command|status|check|installed|package-installed|package-version> ...\n");
     exit(1);
 }

@@ -166,8 +166,13 @@ function dependsOnRuleConditions(option) {
       option.depends({ action, [condition]: /\S/ }),
     ),
   );
-  ["domain", "community_lists", "_dns_rule_set", "_dns_domain_ip_lists"].forEach(
-    (condition) => option.depends({ action: "dns", [condition]: /\S/ }),
+  [
+    "domain",
+    "community_lists",
+    "_dns_rule_set",
+    "_dns_domain_ip_lists",
+  ].forEach((condition) =>
+    option.depends({ action: "dns", [condition]: /\S/ }),
   );
   return option;
 }
@@ -2024,6 +2029,22 @@ function optionMapValue(option, section_id, key) {
   return value == null ? "" : value;
 }
 
+function generateHwid16() {
+  const bytes = new Uint8Array(8);
+
+  if (window.crypto && window.crypto.getRandomValues) {
+    window.crypto.getRandomValues(bytes);
+  } else {
+    for (let i = 0; i < bytes.length; i += 1) {
+      bytes[i] = Math.floor(Math.random() * 256);
+    }
+  }
+
+  return Array.from(bytes)
+    .map((byte) => byte.toString(16).padStart(2, "0"))
+    .join("");
+}
+
 function subscriptionUrlSettingsKeys() {
   return [
     "subscription_update_enabled",
@@ -2034,6 +2055,13 @@ function subscriptionUrlSettingsKeys() {
     "user_agent",
     "auto_hwid",
     "hwid",
+    "custom_device_headers",
+    "device_os",
+    "ver_os",
+    "device_model",
+    "device_locale",
+    "app_version",
+    "accept_language",
     "show_dashboard_metadata",
     "prefix_nodes",
     "node_prefix",
@@ -2053,6 +2081,13 @@ function defaultSubscriptionUrlSettings() {
     user_agent: "",
     auto_hwid: "1",
     hwid: "",
+    custom_device_headers: "0",
+    device_os: "",
+    ver_os: "",
+    device_model: "",
+    device_locale: "",
+    app_version: "",
+    accept_language: "",
     show_dashboard_metadata: "1",
     prefix_nodes: "0",
     node_prefix: "",
@@ -2156,9 +2191,11 @@ function urlTestChildDefaults() {
 function priorityGroupSettingsKeys() {
   return [
     "name",
+    "implementation",
     "health_url",
     "active_check_interval",
     "check_timeout",
+    "blacklist_timeout",
     "recovery_check_interval",
     "pick_fastest",
     "switch_to_faster_same_priority",
@@ -2171,9 +2208,11 @@ function priorityGroupSettingsKeys() {
 function defaultPriorityGroupSettings() {
   return {
     name: "",
+    implementation: "watchdog",
     health_url: "https://www.gstatic.com/generate_204",
     active_check_interval: "5s",
     check_timeout: "2s",
+    blacklist_timeout: "1m",
     recovery_check_interval: "15s",
     pick_fastest: "0",
     switch_to_faster_same_priority: "0",
@@ -2185,9 +2224,11 @@ function defaultPriorityGroupSettings() {
 
 function priorityGroupChildDefaults() {
   return {
+    implementation: "watchdog",
     health_url: "https://www.gstatic.com/generate_204",
     active_check_interval: "5s",
     check_timeout: "2s",
+    blacklist_timeout: "1m",
     recovery_check_interval: "15s",
     pick_fastest: "0",
     switch_to_faster_same_priority: "0",
@@ -2349,20 +2390,61 @@ function addSubscriptionUrlItemOptions(itemSection, options = {}) {
   o.default = "1";
   o.rmempty = false;
 
-  o = itemSection.option(
+  const hwidOption = itemSection.option(
     form.Value,
     "hwid",
     _("HWID"),
     _("Enter the HWID sent with subscription requests"),
   );
-  o.depends("auto_hwid", "0");
-  o.rmempty = false;
-  o.validate = function (itemId, value) {
+  hwidOption.depends("auto_hwid", "0");
+  hwidOption.rmempty = false;
+  hwidOption.validate = function (itemId, value) {
     if (optionMapValue(this, itemId, "auto_hwid") !== "0") {
       return true;
     }
     return `${value || ""}`.trim() ? true : _("Enter HWID");
   };
+
+  o = itemSection.option(
+    form.Button,
+    "_generate_hwid",
+    _("Generate HWID"),
+    _("Generate a random 16-character hexadecimal HWID"),
+  );
+  o.depends("auto_hwid", "0");
+  o.inputstyle = "action";
+  o.inputtitle = _("Generate HWID");
+  o.onclick = function (_event, itemId) {
+    hwidOption.getUIElement(itemId).setValue(generateHwid16());
+  };
+
+  o = itemSection.option(
+    form.Flag,
+    "custom_device_headers",
+    _("Custom device headers"),
+    _("Override the default OpenWrt device headers for this subscription"),
+  );
+  o.default = "0";
+  o.rmempty = false;
+
+  [
+    ["device_os", "X-Device-OS"],
+    ["ver_os", "X-Ver-OS"],
+    ["device_model", "X-Device-Model"],
+    ["device_locale", "X-Device-Locale"],
+    ["app_version", "X-App-Version"],
+    ["accept_language", "Accept-Language"],
+  ].forEach(([key, label]) => {
+    o = itemSection.option(
+      form.Value,
+      key,
+      label,
+      _("Leave empty to omit this header"),
+    );
+    o.depends("custom_device_headers", "1");
+    o.rmempty = true;
+    o.retain = true;
+  });
 
   o = itemSection.option(
     form.Flag,
@@ -2537,9 +2619,7 @@ function addUrlTestItemOptions(itemSection, options = {}) {
     form.Flag,
     "interrupt_exist_connections",
     _("Interrupt connections"),
-    _(
-      "Interrupt connections when URLTest switches the selected server",
-    ),
+    _("Interrupt connections when URLTest switches the selected server"),
   );
   o.default = "1";
   o.rmempty = false;
@@ -2933,6 +3013,19 @@ function addPriorityGroupItemOptions(itemSection, options = {}) {
   };
 
   o = itemSection.option(
+    form.ListValue,
+    "implementation",
+    _("Failover implementation"),
+    _(
+      "Native fallback reacts to real connection failures and requires sing-box extended. The watchdog mode works with all supported sing-box variants.",
+    ),
+  );
+  o.value("watchdog", _("Forkop watchdog"));
+  o.value("native_fallback", _("Native fallback (sing-box extended)"));
+  o.default = "watchdog";
+  o.rmempty = false;
+
+  o = itemSection.option(
     form.Value,
     "health_url",
     _("Check URL"),
@@ -2940,6 +3033,7 @@ function addPriorityGroupItemOptions(itemSection, options = {}) {
   );
   o.default = "https://www.gstatic.com/generate_204";
   o.rmempty = false;
+  o.depends("implementation", "watchdog");
   urlTestUrlChoices().forEach((value) => o.value(value));
   o.validate = function (_itemId, value) {
     return validateUrlTestUrl(value);
@@ -2953,6 +3047,22 @@ function addPriorityGroupItemOptions(itemSection, options = {}) {
   );
   o.default = "5s";
   o.rmempty = false;
+  o.depends("implementation", "watchdog");
+  o.validate = function (_itemId, value) {
+    return validateRequiredSingBoxDuration(value);
+  };
+
+  o = itemSection.option(
+    form.Value,
+    "blacklist_timeout",
+    _("Failed server retry interval"),
+    _(
+      "After a connection failure, retry the skipped server after this duration",
+    ),
+  );
+  o.depends("implementation", "native_fallback");
+  o.default = "1m";
+  o.rmempty = false;
   o.validate = function (_itemId, value) {
     return validateRequiredSingBoxDuration(value);
   };
@@ -2965,6 +3075,7 @@ function addPriorityGroupItemOptions(itemSection, options = {}) {
   );
   o.default = "2s";
   o.rmempty = false;
+  o.depends("implementation", "watchdog");
   o.validate = function (_itemId, value) {
     return validateRequiredSingBoxDuration(value);
   };
@@ -2979,6 +3090,7 @@ function addPriorityGroupItemOptions(itemSection, options = {}) {
   );
   o.default = "15s";
   o.rmempty = false;
+  o.depends("implementation", "watchdog");
   o.validate = function (_itemId, value) {
     return validateRequiredSingBoxDuration(value);
   };
@@ -2993,6 +3105,7 @@ function addPriorityGroupItemOptions(itemSection, options = {}) {
   );
   o.default = "0";
   o.rmempty = false;
+  o.depends("implementation", "watchdog");
 
   o = itemSection.option(
     form.Flag,
@@ -3004,6 +3117,7 @@ function addPriorityGroupItemOptions(itemSection, options = {}) {
   );
   o.default = "0";
   o.rmempty = false;
+  o.depends("implementation", "watchdog");
 
   o = itemSection.option(
     form.Value,
@@ -3011,7 +3125,10 @@ function addPriorityGroupItemOptions(itemSection, options = {}) {
     _("Faster server search interval"),
     _("Use sing-box duration format like 1d, 12h or 30m"),
   );
-  o.depends("switch_to_faster_same_priority", "1");
+  o.depends({
+    implementation: "watchdog",
+    switch_to_faster_same_priority: "1",
+  });
   o.default = "3m";
   o.rmempty = false;
   o.validate = function (itemId, value) {
@@ -3029,6 +3146,7 @@ function addPriorityGroupItemOptions(itemSection, options = {}) {
   );
   o.default = "1";
   o.rmempty = false;
+  o.depends("implementation", "watchdog");
 
   o = itemSection.option(
     form.Flag,
@@ -3161,7 +3279,9 @@ function addDashboardServerFilterOptions(section) {
     form.ListValue,
     "dashboard_filter_mode",
     _("Servers on dashboard"),
-    _("Filter the servers that will be displayed on the dashboard."),
+    _(
+      "Filter the servers that will be displayed on the dashboard. Excluded servers are also removed from the URLTest and Priority groups of this section.",
+    ),
   );
   urlTestFilterModeChoices().forEach((choice) =>
     o.value(choice.value, choice.label),
@@ -5152,7 +5272,11 @@ function uniqueDomainTextValues(values) {
 }
 
 function appendUniqueDomainTextValues(textValue, values) {
-  const originalText = typeof textValue === "string" ? textValue : "";
+  const originalText = Array.isArray(textValue)
+    ? textValue.join("\n")
+    : typeof textValue === "string"
+      ? textValue
+      : "";
   const seen = new Set(
     main.parseValueList(originalText).map((value) => `${value}`.toLowerCase()),
   );
@@ -7789,9 +7913,7 @@ function createSectionContent(section) {
     form.DynamicList,
     "domain_ip_lists",
     _("Domain and IP lists"),
-    _(
-      "Add URLs or local paths to .lst lists containing domains and subnets.",
-    ),
+    _("Add URLs or local paths to .lst lists containing domains and subnets."),
   );
   domainIpListsOption.modalonly = true;
   // Both widgets map to domain_ip_lists, so neither inactive view may erase shared storage.

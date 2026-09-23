@@ -861,11 +861,7 @@ var FLAG_EMOJI_PATTERN = /([\u{1f1e6}-\u{1f1ff}]{2}|\u{1f3f4}[\u{e0061}-\u{e007a
 var EXACT_FLAG_EMOJI_PATTERN = /^([\u{1f1e6}-\u{1f1ff}]{2}|\u{1f3f4}[\u{e0061}-\u{e007a}]+\u{e007f})$/u;
 function renderFlagEmojis(value) {
   return value.split(FLAG_EMOJI_PATTERN).filter(Boolean).map(
-    (part) => EXACT_FLAG_EMOJI_PATTERN.test(part) ? E(
-      "span",
-      { class: "fkp_dashboard-page__flag-emoji" },
-      part
-    ) : part
+    (part) => EXACT_FLAG_EMOJI_PATTERN.test(part) ? E("span", { class: "fkp_dashboard-page__flag-emoji" }, part) : part
   );
 }
 
@@ -3152,6 +3148,13 @@ function hydrateConfigSections(configSections) {
           user_agent: item.user_agent,
           auto_hwid: item.auto_hwid,
           hwid: item.hwid,
+          custom_device_headers: item.custom_device_headers,
+          device_os: item.device_os,
+          ver_os: item.ver_os,
+          device_model: item.device_model,
+          device_locale: item.device_locale,
+          app_version: item.app_version,
+          accept_language: item.accept_language,
           show_dashboard_metadata: item.show_dashboard_metadata,
           prefix_nodes: item.prefix_nodes,
           node_prefix: item.node_prefix,
@@ -3214,6 +3217,8 @@ function hydrateConfigSections(configSections) {
         );
         settings[groupId] = {
           name: item.name,
+          implementation: item.implementation,
+          blacklist_timeout: item.blacklist_timeout,
           health_url: item.health_url,
           active_check_interval: item.active_check_interval,
           check_timeout: item.check_timeout,
@@ -3496,6 +3501,7 @@ function getPriorityConfigs(section) {
       id,
       code: getPriorityTag(sectionName, id),
       displayName: itemSettingString(settings, "name", id),
+      implementation: itemSettingString(settings, "implementation", "watchdog") === "native_fallback" ? "native_fallback" : "watchdog",
       settings,
       pinDashboard: itemSettingBoolean(settings, "pin_dashboard", true),
       healthUrl: itemSettingString(
@@ -3509,6 +3515,7 @@ function getPriorityConfigs(section) {
         "5s"
       ),
       checkTimeout: itemSettingString(settings, "check_timeout", "2s"),
+      blacklistTimeout: itemSettingString(settings, "blacklist_timeout", "1m"),
       recoveryCheckInterval: itemSettingString(
         settings,
         "recovery_check_interval",
@@ -3702,11 +3709,13 @@ function buildPriorityInfo({
   return {
     code: config.code,
     displayName: groupCache?.displayName || config.displayName,
+    implementation: groupCache?.implementation || config.implementation,
     selectedCode: selectedCode || void 0,
     selectedName: selectedName || void 0,
     healthUrl: groupCache?.health_url || config.healthUrl,
     activeCheckInterval: groupCache?.active_check_interval || config.activeCheckInterval,
     checkTimeout: groupCache?.check_timeout || config.checkTimeout,
+    blacklistTimeout: groupCache?.blacklist_timeout || config.blacklistTimeout,
     recoveryCheckInterval: groupCache?.recovery_check_interval || config.recoveryCheckInterval,
     pickFastest: groupCache?.pick_fastest ?? config.pickFastest,
     switchToFasterSamePriority: groupCache?.switch_to_faster_same_priority ?? config.switchToFasterSamePriority,
@@ -5130,6 +5139,8 @@ var SocketManager = class _SocketManager {
     this.listeners = /* @__PURE__ */ new Map();
     this.connected = /* @__PURE__ */ new Map();
     this.errorListeners = /* @__PURE__ */ new Map();
+    this.reconnectAttempts = /* @__PURE__ */ new Map();
+    this.reconnectTimers = /* @__PURE__ */ new Map();
   }
   static getInstance() {
     if (!_SocketManager.instance) {
@@ -5138,7 +5149,15 @@ var SocketManager = class _SocketManager {
     return _SocketManager.instance;
   }
   resetAll() {
-    for (const [url, ws] of this.sockets.entries()) {
+    const sockets = [...this.sockets.entries()];
+    for (const timer of this.reconnectTimers.values()) clearTimeout(timer);
+    this.sockets.clear();
+    this.listeners.clear();
+    this.errorListeners.clear();
+    this.connected.clear();
+    this.reconnectAttempts.clear();
+    this.reconnectTimers.clear();
+    for (const [url, ws] of sockets) {
       try {
         if (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING) {
           ws.close();
@@ -5151,10 +5170,6 @@ var SocketManager = class _SocketManager {
         );
       }
     }
-    this.sockets.clear();
-    this.listeners.clear();
-    this.errorListeners.clear();
-    this.connected.clear();
     logger.info("[SOCKET]", "All connections and state have been reset.");
   }
   connect(url) {
@@ -5169,6 +5184,7 @@ var SocketManager = class _SocketManager {
         err
       );
       this.triggerError(url, err instanceof Event ? err : String(err));
+      this.scheduleReconnect(url);
       return;
     }
     this.sockets.set(url, ws);
@@ -5177,6 +5193,7 @@ var SocketManager = class _SocketManager {
     if (!this.errorListeners.has(url)) this.errorListeners.set(url, /* @__PURE__ */ new Set());
     ws.addEventListener("open", () => {
       this.connected.set(url, true);
+      this.reconnectAttempts.delete(url);
       logger.info("[SOCKET]", "Connected to", url);
     });
     ws.addEventListener("message", (event) => {
@@ -5192,9 +5209,12 @@ var SocketManager = class _SocketManager {
       }
     });
     ws.addEventListener("close", () => {
+      if (this.sockets.get(url) !== ws) return;
+      this.sockets.delete(url);
       this.connected.set(url, false);
       logger.warn("[SOCKET]", `Disconnected: ${url}`);
       this.triggerError(url, "Connection closed");
+      this.scheduleReconnect(url);
     });
     ws.addEventListener("error", (err) => {
       logger.error("[SOCKET]", `Socket error for ${url}:`, err);
@@ -5208,18 +5228,21 @@ var SocketManager = class _SocketManager {
     if (onError) {
       this.errorListeners.get(url)?.add(onError);
     }
-    if (!this.sockets.has(url)) {
-      this.connect(url);
-    }
     if (!this.listeners.has(url)) {
       this.listeners.set(url, /* @__PURE__ */ new Set());
     }
     this.listeners.get(url)?.add(listener);
+    if (!this.sockets.has(url)) {
+      this.connect(url);
+    }
   }
   unsubscribe(url, listener, onError) {
     this.listeners.get(url)?.delete(listener);
     if (onError) {
       this.errorListeners.get(url)?.delete(onError);
+    }
+    if (this.listeners.get(url)?.size === 0) {
+      this.disconnect(url);
     }
   }
   // eslint-disable-next-line
@@ -5234,16 +5257,20 @@ var SocketManager = class _SocketManager {
   }
   disconnect(url) {
     const ws = this.sockets.get(url);
-    if (ws) {
-      ws.close();
-      this.sockets.delete(url);
-      this.listeners.delete(url);
-      this.errorListeners.delete(url);
-      this.connected.delete(url);
-    }
+    this.clearReconnect(url);
+    this.sockets.delete(url);
+    this.listeners.delete(url);
+    this.errorListeners.delete(url);
+    this.connected.delete(url);
+    if (ws) ws.close();
   }
   disconnectAll() {
-    for (const url of this.sockets.keys()) {
+    const urls = /* @__PURE__ */ new Set([
+      ...this.sockets.keys(),
+      ...this.listeners.keys(),
+      ...this.reconnectTimers.keys()
+    ]);
+    for (const url of urls) {
       this.disconnect(url);
     }
   }
@@ -5258,6 +5285,28 @@ var SocketManager = class _SocketManager {
         }
       }
     }
+  }
+  scheduleReconnect(url) {
+    if (this.reconnectTimers.has(url) || (this.listeners.get(url)?.size || 0) === 0) {
+      return;
+    }
+    const attempt = this.reconnectAttempts.get(url) || 0;
+    const delays = [1e3, 2e3, 5e3];
+    const delay = delays[Math.min(attempt, delays.length - 1)];
+    this.reconnectAttempts.set(url, attempt + 1);
+    this.reconnectTimers.set(
+      url,
+      setTimeout(() => {
+        this.reconnectTimers.delete(url);
+        if ((this.listeners.get(url)?.size || 0) > 0) this.connect(url);
+      }, delay)
+    );
+  }
+  clearReconnect(url) {
+    const timer = this.reconnectTimers.get(url);
+    if (timer) clearTimeout(timer);
+    this.reconnectTimers.delete(url);
+    this.reconnectAttempts.delete(url);
   }
 };
 var socket = SocketManager.getInstance();
@@ -6275,34 +6324,48 @@ function renderPriorityInfoModal(outbound) {
       label: _("Selected"),
       children: [renderPrioritySelectedValue(info)]
     },
-    { label: _("Check URL"), children: [renderDetailsUrl(info.healthUrl)] },
-    {
-      label: _("Check interval"),
-      value: info.activeCheckInterval
-    },
-    { label: _("Unavailability timeout"), value: info.checkTimeout },
-    {
-      label: _("Higher-level check interval"),
-      value: info.recoveryCheckInterval
-    },
-    {
-      label: _("Select the fastest node"),
-      value: info.pickFastest
-    },
-    {
-      label: _("Automatically select the fastest node in the current level"),
-      value: info.switchToFasterSamePriority
-    },
-    ...info.switchToFasterSamePriority ? [
+    ...info.implementation === "native_fallback" ? [
       {
-        label: _("Faster server search interval"),
-        value: info.fastestCheckInterval
+        label: _("Failed server retry interval"),
+        value: info.blacklistTimeout
       }
-    ] : [],
-    {
-      label: _("Interrupt connections"),
-      value: info.interruptExistConnections
-    }
+    ] : [
+      {
+        label: _("Check URL"),
+        children: [renderDetailsUrl(info.healthUrl)]
+      },
+      {
+        label: _("Check interval"),
+        value: info.activeCheckInterval
+      },
+      { label: _("Unavailability timeout"), value: info.checkTimeout },
+      {
+        label: _("Higher-level check interval"),
+        value: info.recoveryCheckInterval
+      },
+      {
+        label: _("Select the fastest node"),
+        value: info.pickFastest
+      },
+      {
+        label: _(
+          "Automatically select the fastest node in the current level"
+        ),
+        value: info.switchToFasterSamePriority
+      },
+      ...info.switchToFasterSamePriority ? [
+        {
+          label: _("Faster server search interval"),
+          value: info.fastestCheckInterval
+        }
+      ] : []
+    ],
+    ...info.implementation === "watchdog" ? [
+      {
+        label: _("Interrupt connections"),
+        value: info.interruptExistConnections
+      }
+    ] : []
   ];
   return E("div", { class: "fkp_dashboard-page__urltest-details" }, [
     E(

@@ -646,6 +646,76 @@ function subscription_auto_hwid(section, value) {
     return item_option(section, "subscription_url_settings", value, "hwid", "") == "";
 }
 
+function subscription_custom_device_headers(section, value) {
+    let child = child_item_by_value(section, "subscription_url", "url", value);
+    if (child != null)
+        return child_bool(child, "custom_device_headers", false);
+    return item_bool(section, "subscription_url_settings", value, "custom_device_headers", false);
+}
+
+function subscription_device_header(section, value, name) {
+    let child = child_item_by_value(section, "subscription_url", "url", value);
+    if (child != null)
+        return child_option(child, name, "");
+    return item_option(section, "subscription_url_settings", value, name, "");
+}
+
+function subscription_device_os(section, value) {
+    return subscription_device_header(section, value, "device_os");
+}
+
+function subscription_ver_os(section, value) {
+    return subscription_device_header(section, value, "ver_os");
+}
+
+function subscription_device_model(section, value) {
+    return subscription_device_header(section, value, "device_model");
+}
+
+function subscription_device_locale(section, value) {
+    return subscription_device_header(section, value, "device_locale");
+}
+
+function subscription_app_version(section, value) {
+    return subscription_device_header(section, value, "app_version");
+}
+
+function subscription_accept_language(section, value) {
+    return subscription_device_header(section, value, "accept_language");
+}
+
+function subscription_device_headers(section, value) {
+    return {
+        enabled: subscription_custom_device_headers(section, value),
+        device_os: subscription_device_os(section, value),
+        ver_os: subscription_ver_os(section, value),
+        device_model: subscription_device_model(section, value),
+        device_locale: subscription_device_locale(section, value),
+        app_version: subscription_app_version(section, value),
+        accept_language: subscription_accept_language(section, value)
+    };
+}
+
+function device_headers_signature(headers) {
+    headers = object_or_empty(headers);
+    if (!headers.enabled)
+        return "";
+
+    return sprintf("%J", {
+        enabled: "1",
+        device_os: as_string(headers.device_os),
+        ver_os: as_string(headers.ver_os),
+        device_model: as_string(headers.device_model),
+        device_locale: as_string(headers.device_locale),
+        app_version: as_string(headers.app_version),
+        accept_language: as_string(headers.accept_language)
+    });
+}
+
+function subscription_device_headers_signature(section, value) {
+    return device_headers_signature(subscription_device_headers(section, value));
+}
+
 function subscription_include_urltest_groups(section, value) {
     let child = child_item_by_value(section, "subscription_url", "url", value);
     if (child != null)
@@ -884,6 +954,11 @@ function priority_group_display_name(section, value) {
     return child != null ? child_option(child, "name", as_string(value)) : as_string(value);
 }
 
+function priority_group_implementation(section, value) {
+    let child = priority_group_child(section, value);
+    return child != null ? child_option(child, "implementation", "watchdog") : "watchdog";
+}
+
 function priority_group_health_url(section, value) {
     let child = priority_group_child(section, value);
     return child != null ? child_option(child, "health_url", "https://www.gstatic.com/generate_204") : "https://www.gstatic.com/generate_204";
@@ -897,6 +972,11 @@ function priority_group_active_check_interval(section, value) {
 function priority_group_check_timeout(section, value) {
     let child = priority_group_child(section, value);
     return child != null ? child_option(child, "check_timeout", "2s") : "2s";
+}
+
+function priority_group_blacklist_timeout(section, value) {
+    let child = priority_group_child(section, value);
+    return child != null ? child_option(child, "blacklist_timeout", "1m") : "1m";
 }
 
 function priority_group_recovery_check_interval(section, value) {
@@ -1128,6 +1208,16 @@ return {
     subscription_dashboard_metadata_enabled,
     subscription_auto_user_agent,
     subscription_auto_hwid,
+    subscription_custom_device_headers,
+    subscription_device_os,
+    subscription_ver_os,
+    subscription_device_model,
+    subscription_device_locale,
+    subscription_app_version,
+    subscription_accept_language,
+    subscription_device_headers,
+    device_headers_signature,
+    subscription_device_headers_signature,
     subscription_include_urltest_groups,
     subscription_hide_urltest_group_outbounds,
     subscription_hide_detour_outbounds,
@@ -1166,9 +1256,11 @@ return {
     priority_group_settings,
     priority_levels,
     priority_group_display_name,
+    priority_group_implementation,
     priority_group_health_url,
     priority_group_active_check_interval,
     priority_group_check_timeout,
+    priority_group_blacklist_timeout,
     priority_group_recovery_check_interval,
     priority_group_pick_fastest,
     priority_group_switch_to_faster_same_priority,

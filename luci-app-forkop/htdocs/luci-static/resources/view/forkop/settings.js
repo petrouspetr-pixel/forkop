@@ -153,6 +153,13 @@ function configureDnsDuration(
   configureDnsFailoverVisibility(option, dnsOption, bootstrapOption);
 }
 
+function configureDnsThreshold(option, dnsOption, bootstrapOption) {
+  option.default = "3";
+  option.rmempty = false;
+  option.datatype = "range(1,10)";
+  configureDnsFailoverVisibility(option, dnsOption, bootstrapOption);
+}
+
 function createSettingsContent(section, capabilities) {
   let o = section.option(
     form.ListValue,
@@ -175,6 +182,55 @@ function createSettingsContent(section, capabilities) {
     ),
   );
   configureDnsList(dnsOption, main.DNS_SERVER_OPTIONS, "77.88.8.8");
+
+  o = section.option(
+    form.Flag,
+    "dns_mtls_enabled",
+    _("DoH client certificate authentication"),
+    _("Use a client certificate only for the specified main DoH server."),
+  );
+  o.default = "0";
+  o.rmempty = false;
+  o.depends("dns_type", "doh");
+
+  o = section.option(
+    form.Value,
+    "dns_mtls_host",
+    _("DoH certificate hostname"),
+  );
+  o.depends({ dns_type: "doh", dns_mtls_enabled: "1" });
+  o.rmempty = false;
+  o.retain = true;
+  o.datatype = "hostname";
+  o.description = _(
+    "Hostname of a configured main DoH server, without a scheme, port or path.",
+  );
+
+  [
+    ["dns_mtls_client_certificate", _("Client certificate file")],
+    ["dns_mtls_client_key", _("Client private key file")],
+  ].forEach(([key, label]) => {
+    o = section.option(
+      form.Value,
+      key,
+      label,
+      _(
+        "Absolute path to an existing file on the router. Enter the path, not the file contents.",
+      ),
+    );
+    o.depends({ dns_type: "doh", dns_mtls_enabled: "1" });
+    o.rmempty = false;
+    o.retain = true;
+    o.validate = function (_section_id, value) {
+      const path = `${value || ""}`;
+      return path.startsWith("/") &&
+        path.length > 1 &&
+        !path.endsWith("/") &&
+        !/[\x00-\x1f\x7f]/.test(path)
+        ? true
+        : _("Enter an absolute file path");
+    };
+  });
 
   const bootstrapOption = section.option(
     form.DynamicList,
@@ -215,6 +271,26 @@ function createSettingsContent(section, capabilities) {
     ),
   );
   configureDnsDuration(o, "2s", dnsOption, bootstrapOption);
+
+  o = section.option(
+    form.Value,
+    "dns_failure_threshold",
+    _("DNS Failures Before Switching"),
+    _(
+      "Number of consecutive failed checks required before switching DNS servers.",
+    ),
+  );
+  configureDnsThreshold(o, dnsOption, bootstrapOption);
+
+  o = section.option(
+    form.Value,
+    "dns_recovery_threshold",
+    _("DNS Successful Checks Before Recovery"),
+    _(
+      "Number of consecutive successful checks required before returning to a higher-priority DNS server.",
+    ),
+  );
+  configureDnsThreshold(o, dnsOption, bootstrapOption);
 
   o = section.option(
     form.Value,
