@@ -10,6 +10,8 @@ let runtime_route = require("singbox.route");
 let runtime_rulesets = require("singbox.rulesets");
 let runtime_servers = require("singbox.servers");
 let runtime_subscription = require("singbox.subscription");
+let runtime_prune = require("singbox.prune");
+let community_subnets = require("routing.community");
 let runtime_url = require("core.url");
 let runtime_urltest = require("singbox.urltest");
 let source_rulesets = require("routing.rulesets");
@@ -22,6 +24,8 @@ let runtime_settings_cache = null;
 let runtime_ruleset_folder = runtime_constants.TMP_RULESET_FOLDER;
 let runtime_supports_xhttp = true;
 let runtime_sing_box_version = "";
+let runtime_subscription_tags = {};
+let runtime_section_states = {};
 
 let as_string = common.as_string;
 let read_json_file = common.read_json_file;
@@ -819,6 +823,7 @@ function add_subscription_source_with_state(config, section, source_index, sourc
 
         push(config.outbounds, outbound);
         added++;
+        runtime_subscription_tags[outbound.tag] = true;
         if (!is_group)
             push(urltest_candidate_tags, outbound.tag);
         runtime_subscription.remember_source_outbound(
@@ -2304,8 +2309,7 @@ function add_connections_outbound(config, section, taken) {
 
     state.urltestCandidateTags = unique_string_array(urltest_candidate_tags);
     add_proxy_selector(config, section, selector_tags, urltest_candidate_tags, state);
-    if (!atomic_write_json_file(runtime_subscription.section_cache_path(section_name), state))
-        runtime_generate_unsupported("failed to write section cache for " + section_name);
+    runtime_section_states[section_name] = state;
 }
 
 function enabled_action_index(sections, target_section, action_name) {
@@ -2804,6 +2808,19 @@ function add_fully_routed_ips_rules(config, section) {
     push(config.route.rules, route_rule);
 }
 
+function add_community_subnet_rulesets(config, service, rule_set_tags) {
+    for (let entry in community_subnets.entries(service, runtime_ruleset_folder)) {
+        if (!source_file_exists(entry.path)) {
+            if (!ensure_parent_dir(entry.path))
+                runtime_generate_unsupported("failed to prepare community subnet rules");
+            source_rulesets.create_source(entry.path);
+        }
+        if (!ruleset_registered(config, entry.tag))
+            push(config.route.rule_set, { type: "local", tag: entry.tag, format: "source", path: entry.path });
+        push(rule_set_tags, entry.tag);
+    }
+}
+
 function add_combined_route_for_section(config, section) {
     let domains = domain_conditions(section);
     let domain = domains.domain;
@@ -2822,6 +2839,7 @@ function add_combined_route_for_section(config, section) {
         let ensured = ensure_community_ruleset(config, section_name, as_string(community));
         push(rule_set_tags, ensured.tag);
         push(dns_rule_set_tags, ensured.tag);
+        add_community_subnet_rulesets(config, as_string(community), rule_set_tags);
     }
     for (let reference in connections.rule_sets(section)) {
         let ensured = ensure_custom_ruleset(config, as_string(reference));
@@ -3077,6 +3095,8 @@ function add_server_routes(config, servers, sections) {
 }
 
 function generate_config(output_path, service_address, mwan3_active, supports_xhttp, deferred_sections, sing_box_version) {
+    runtime_subscription_tags = {};
+    runtime_section_states = {};
     runtime_supports_xhttp = supports_xhttp == null || as_string(supports_xhttp) == ""
         ? true
         : cli_bool(supports_xhttp);
@@ -3113,6 +3133,12 @@ function generate_config(output_path, service_address, mwan3_active, supports_xh
         add_mixed_proxy_for_section(config, section, service_address);
 
     assert_unique_outbound_tags(config);
+    let removed = runtime_prune.prune_config(config, runtime_subscription_tags);
+    for (let section_name, state in runtime_section_states) {
+        runtime_prune.prune_state(state, removed);
+        if (!atomic_write_json_file(runtime_subscription.section_cache_path(section_name), state))
+            runtime_generate_unsupported("failed to write section cache for " + section_name);
+    }
     strip_internal_fields(config);
     if (!write_json_file(output_path, config)) {
         warn("failed to write ", output_path, "\n");

@@ -29,4 +29,25 @@ for (const rule of config.dns.rules) assert(!tags.some(t => array(rule.rule_set)
 assert(!config.route.rule_set.some(s => s.type === 'local' && s.tag.startsWith('community-meta-')), 'DNS-only actions do not intercept subnets');
 for (const set of sets) assert.deepEqual(JSON.parse(fs.readFileSync(set.path, 'utf8')), {version:3,rules:[]});
 JS
+printf '2001:db8:1::/48\r\n2001:db8:1::/48 # duplicate\n' >"$WORK_DIR/subnets.txt"
+ucode -L "$LIB" -e '
+let c = require("routing.community"); let fs = require("fs");
+let dir = ARGV[0];
+let entry = c.entries("telegram", dir + "/config.json.rulesets")[1];
+if (!c.publish(entry, dir + "/subnets.txt", dir + "/normalized.txt")) exit(1);
+let before = fs.readfile(entry.path);
+let rules = json(before);
+if (length(rules.rules[0].ip_cidr) != 1 || rules.rules[0].ip_cidr[0] != "2001:db8:1::/48") exit(2);
+if (fs.readfile(dir + "/normalized.txt") != "2001:db8:1::/48\n") exit(3);
+fs.writefile(dir + "/subnets.txt", "192.0.2.0/24\n");
+if (c.publish(entry, dir + "/subnets.txt", dir + "/normalized.txt")) exit(4);
+if (fs.readfile(entry.path) != before) exit(5);
+fs.writefile(dir + "/subnets.txt", "<html>error</html>\n");
+if (c.publish(entry, dir + "/subnets.txt", dir + "/normalized.txt")) exit(6);
+if (fs.readfile(entry.path) != before) exit(7);
+fs.writefile(dir + "/subnets.txt", "2001:db8:2::/48\n");
+if (!c.publish(entry, dir + "/subnets.txt", dir + "/normalized.txt")) exit(8);
+if (length(json(fs.readfile(entry.path)).rules[0].ip_cidr) != 2) exit(9);
+if (length(c.entries("roblox", dir)) != 1 || length(c.entries("unknown", dir)) != 0) exit(10);
+' "$WORK_DIR"
 printf 'community subnet routing checks passed\n'

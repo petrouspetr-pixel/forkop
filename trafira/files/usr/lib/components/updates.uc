@@ -54,19 +54,8 @@ const NFT_FAKEIP_MARK = getenv("NFT_FAKEIP_MARK") || "0x04000000";
 const SB_SERVICE_MIXED_INBOUND_ADDRESS = getenv("SB_SERVICE_MIXED_INBOUND_ADDRESS") || "127.0.0.1";
 const SB_SERVICE_MIXED_INBOUND_PORT = getenv("SB_SERVICE_MIXED_INBOUND_PORT") || "4534";
 const SB_VARIANT_STATE_FILE = getenv("SB_VARIANT_STATE_FILE") || "/etc/trafira/sing-box-variant";
-const GITHUB_RAW_URL = getenv("GITHUB_RAW_URL") || "https://raw.githubusercontent.com/itdoginfo/allow-domains/main";
-const BUILTIN_SUBNET_URLS = {
-    twitter: [ getenv("SUBNETS_TWITTER") || GITHUB_RAW_URL + "/Subnets/IPv4/twitter.lst", getenv("SUBNETS_TWITTER6") || GITHUB_RAW_URL + "/Subnets/IPv6/twitter.lst" ],
-    meta: [ getenv("SUBNETS_META") || GITHUB_RAW_URL + "/Subnets/IPv4/meta.lst", getenv("SUBNETS_META6") || GITHUB_RAW_URL + "/Subnets/IPv6/meta.lst" ],
-    discord: [ getenv("SUBNETS_DISCORD") || GITHUB_RAW_URL + "/Subnets/IPv4/discord.lst", getenv("SUBNETS_DISCORD6") || GITHUB_RAW_URL + "/Subnets/IPv6/discord.lst" ],
-    roblox: [ getenv("SUBNETS_ROBLOX") || GITHUB_RAW_URL + "/Subnets/IPv4/roblox.lst" ],
-    telegram: [ getenv("SUBNETS_TELERAM") || GITHUB_RAW_URL + "/Subnets/IPv4/telegram.lst", getenv("SUBNETS_TELERAM6") || GITHUB_RAW_URL + "/Subnets/IPv6/telegram.lst" ],
-    cloudflare: [ getenv("SUBNETS_CLOUDFLARE") || GITHUB_RAW_URL + "/Subnets/IPv4/cloudflare.lst", getenv("SUBNETS_CLOUDFLARE6") || GITHUB_RAW_URL + "/Subnets/IPv6/cloudflare.lst" ],
-    hetzner: [ getenv("SUBNETS_HETZNER") || GITHUB_RAW_URL + "/Subnets/IPv4/hetzner.lst", getenv("SUBNETS_HETZNER6") || GITHUB_RAW_URL + "/Subnets/IPv6/hetzner.lst" ],
-    ovh: [ getenv("SUBNETS_OVH") || GITHUB_RAW_URL + "/Subnets/IPv4/ovh.lst", getenv("SUBNETS_OVH6") || GITHUB_RAW_URL + "/Subnets/IPv6/ovh.lst" ],
-    digitalocean: [ getenv("SUBNETS_DIGITALOCEAN") || GITHUB_RAW_URL + "/Subnets/IPv4/digitalocean.lst", getenv("SUBNETS_DIGITALOCEAN6") || GITHUB_RAW_URL + "/Subnets/IPv6/digitalocean.lst" ],
-    cloudfront: [ getenv("SUBNETS_CLOUDFRONT") || GITHUB_RAW_URL + "/Subnets/IPv4/cloudfront.lst", getenv("SUBNETS_CLOUDFRONT6") || GITHUB_RAW_URL + "/Subnets/IPv6/cloudfront.lst" ]
-};
+let community_subnets = require("routing.community");
+const BUILTIN_SUBNET_URLS = community_subnets.urls;
 let rule_config = null;
 let routing_rulesets_module_value = null;
 let singbox_rulesets_module_value = null;
@@ -2127,7 +2116,8 @@ function import_builtin_subnets_from_rule(section, settings) {
         if (type(urls) != "array")
             continue;
 
-        for (let url in urls) {
+        for (let entry in community_subnets.entries(as_string(service), TMP_RULESET_FOLDER)) {
+            let url = entry.url;
             let tmpfile = temp_path();
             if (tmpfile == "") {
                 ok = false;
@@ -2136,6 +2126,14 @@ function import_builtin_subnets_from_rule(section, settings) {
 
             if (!download_to_file(url, tmpfile, service_proxy_address(settings, "lists")) || !file_nonempty(tmpfile)) {
                 log_message("Failed to download built-in " + as_string(service) + " subnet list; skipping it until the next successful update", "error");
+                ok = false;
+                remove_file(tmpfile);
+                continue;
+            }
+
+            ensure_dir(TMP_RULESET_FOLDER);
+            if (!community_subnets.publish(entry, tmpfile, tmpfile)) {
+                log_message("Failed to publish built-in " + as_string(service) + " subnet rules; keeping previous rules", "error");
                 ok = false;
                 remove_file(tmpfile);
                 continue;
