@@ -7,7 +7,7 @@ usage() {
   cat <<EOF
 Usage: $(basename "$0") <version> [output-directory]
 
-Build Forkop IPK and APK packages. The version must use x.y.z format.
+Build Trafira IPK and APK packages. The version must use x.y.z format.
 EOF
 }
 
@@ -36,11 +36,11 @@ SDK_DIR="${SDK_DIR:-$SDK_CACHE_DIR/extracted}"
 IPK_SDK_URL="${IPK_SDK_URL:-https://downloads.openwrt.org/releases/24.10.6/targets/x86/64/openwrt-sdk-24.10.6-x86-64_gcc-13.3.0_musl.Linux-x86_64.tar.zst}"
 APK_SDK_URL="${APK_SDK_URL:-https://downloads.openwrt.org/releases/25.12.3/targets/x86/64/openwrt-sdk-25.12.3-x86-64_gcc-14.3.0_musl.Linux-x86_64.tar.zst}"
 
-BACKEND_DESCRIPTION="Rule-based Forkop backend with hybrid sing-box + zapret orchestration"
-APP_DESCRIPTION="Rule-based Forkop LuCI app with hybrid sing-box + zapret orchestration"
+BACKEND_DESCRIPTION="Rule-based Trafira backend with hybrid sing-box + zapret orchestration"
+APP_DESCRIPTION="Rule-based Trafira LuCI app with hybrid sing-box + zapret orchestration"
 I18N_DESCRIPTION="Translation for luci-app-forkop - Русский (Russian)"
-MAINTAINER="ushan0v <ushan0v@users.noreply.github.com>"
-PROJECT_URL="https://github.com/ushan0v/forkop"
+MAINTAINER="petrouspetr-pixel"
+PROJECT_URL="https://github.com/petrouspetr-pixel/trafira"
 BACKEND_DEPENDS_IPK="libc, ca-bundle, kmod-inet-diag, kmod-netlink-diag, kmod-tun, curl, ucode, ucode-mod-fs, ucode-mod-uci, kmod-nft-tproxy, coreutils-base64, bind-dig, nftables, kmod-nft-nat, ip-full"
 BACKEND_DEPENDS_APK="bind-dig ca-bundle coreutils-base64 curl ip-full kmod-inet-diag kmod-netlink-diag kmod-nft-nat kmod-nft-tproxy kmod-tun libc nftables ucode ucode-mod-fs ucode-mod-uci !https-dns-proxy !nextdns !luci-app-passwall !luci-app-passwall2"
 BACKEND_CONFLICTS_IPK="https-dns-proxy, nextdns, luci-app-passwall, luci-app-passwall2"
@@ -681,7 +681,7 @@ main() {
   mkdir -p "$BUILD_DIR" "$SDK_CACHE_DIR"
   exec 9>"$SDK_CACHE_DIR/.build.lock"
   if ! flock -n 9; then
-    echo "Another Forkop package build is already running" >&2
+    echo "Another Trafira package build is already running" >&2
     exit 1
   fi
   output_dir="$OUTPUT_DIR"

@@ -1,8 +1,8 @@
 #!/bin/sh
 # shellcheck shell=dash
 
-REPO_OWNER="ushan0v"
-REPO_NAME="forkop"
+REPO_OWNER="petrouspetr-pixel"
+REPO_NAME="trafira"
 
 REQUIRED_SPACE_KB=15360
 CONNECT_TIMEOUT_SECONDS=15
@@ -55,7 +55,7 @@ usage() {
     cat <<EOF
 Usage: $0
 
-Installs or updates Forkop packages:
+Installs or updates Trafira packages:
   - forkop
   - luci-app-forkop
   - luci-i18n-forkop-ru when requested or when LuCI language is Russian
@@ -116,7 +116,7 @@ detect_fetcher() {
         return 0
     fi
 
-    fail "wget or curl is required to download Forkop"
+    fail "wget or curl is required to download Trafira"
 }
 
 run_with_deadline() {
@@ -998,13 +998,13 @@ function installer_deactivate_legacy_base() {
     }
 
     if (running.value) {
-        warn("Detected a running legacy service. Stopping it before installing Forkop.\n");
+        warn("Detected a running legacy service. Stopping it before installing Trafira.\n");
         if (!installer_service_action(INSTALLER_LEGACY_BASE_INIT, "stop"))
             return false;
     }
 
     if (enabled.value) {
-        warn("Detected an enabled legacy autostart. Disabling it before installing Forkop.\n");
+        warn("Detected an enabled legacy autostart. Disabling it before installing Trafira.\n");
         if (!installer_service_action(INSTALLER_LEGACY_BASE_INIT, "disable"))
             return false;
     }
@@ -1030,7 +1030,7 @@ function installer_cleanup_legacy() {
         { known: true, value: false } :
         installer_backend_status_running_state(active_bin);
     if (!enabled.known || (!running.known && !backend_running.known)) {
-        warn("Unable to determine the Forkop service state before installation.\n");
+        warn("Unable to determine the Trafira service state before installation.\n");
         return false;
     }
     let was_enabled = enabled.value;
@@ -1216,7 +1216,7 @@ function installer_post_install() {
     if (env("FORKOP_WAS_RUNNING", "0") == "1" && path_executable(INSTALLER_FORKOP_INIT)) {
         if (!run_args([ INSTALLER_FORKOP_INIT, "start" ]) &&
             !run_args([ INSTALLER_FORKOP_INIT, "restart" ]))
-            warn("Failed to start Forkop after upgrade.\n");
+            warn("Failed to start Trafira after upgrade.\n");
     }
 
     return true;
@@ -1580,7 +1580,7 @@ check_system() {
     major="$(printf '%s' "$release" | sed 's/[^0-9].*$//' | cut -d. -f1)"
 
     if [ -n "$major" ] && [ "$major" -lt 24 ]; then
-        fail "Forkop requires OpenWrt 24.10 or newer"
+        fail "Trafira requires OpenWrt 24.10 or newer"
     fi
 
     available_space="$(df /overlay 2>/dev/null | awk 'NR==2 {print $4}')"
@@ -1715,13 +1715,13 @@ resolve_forkop_release() {
 
     FORKOP_RELEASE_JSON="$(fetch_github_latest_release_json "$REPO_OWNER" "$REPO_NAME")"
     FORKOP_RELEASE_TAG="$(printf '%s' "$FORKOP_RELEASE_JSON" | install_json_ucode release-tag 2>/dev/null)"
-    [ -n "$FORKOP_RELEASE_TAG" ] || fail "Failed to detect the Forkop release tag"
+    [ -n "$FORKOP_RELEASE_TAG" ] || fail "Failed to detect the Trafira release tag"
 
     FORKOP_BACKEND_URL="$(printf '%s' "$FORKOP_RELEASE_JSON" | install_json_ucode release-asset-url backend "$asset_ext" 2>/dev/null)"
-    [ -n "$FORKOP_BACKEND_URL" ] || fail "The Forkop release does not contain a forkop .$asset_ext package"
+    [ -n "$FORKOP_BACKEND_URL" ] || fail "The Trafira release does not contain a forkop .$asset_ext package"
 
     FORKOP_APP_URL="$(printf '%s' "$FORKOP_RELEASE_JSON" | install_json_ucode release-asset-url app "$asset_ext" 2>/dev/null)"
-    [ -n "$FORKOP_APP_URL" ] || fail "The Forkop release does not contain a luci-app-forkop .$asset_ext package"
+    [ -n "$FORKOP_APP_URL" ] || fail "The Trafira release does not contain a luci-app-forkop .$asset_ext package"
 
     FORKOP_BACKEND_NAME="$(basename "$FORKOP_BACKEND_URL")"
     FORKOP_APP_NAME="$(basename "$FORKOP_APP_URL")"
@@ -1732,7 +1732,7 @@ resolve_forkop_release() {
 
     if [ "$FORKOP_I18N_REQUESTED" -eq 1 ]; then
         FORKOP_I18N_URL="$(printf '%s' "$FORKOP_RELEASE_JSON" | install_json_ucode release-asset-url i18n "$asset_ext" 2>/dev/null)"
-        [ -n "$FORKOP_I18N_URL" ] || fail "The Forkop release does not contain a luci-i18n-forkop-ru .$asset_ext package"
+        [ -n "$FORKOP_I18N_URL" ] || fail "The Trafira release does not contain a luci-i18n-forkop-ru .$asset_ext package"
         FORKOP_I18N_NAME="$(basename "$FORKOP_I18N_URL")"
     fi
 }
@@ -1752,7 +1752,7 @@ select_sing_box_installation() {
         [ -r /etc/init.d/sing-box ] &&
         grep -Fq 'managed sing-box service for binary variants' /etc/init.d/sing-box; then
         SING_BOX_INSTALL_VARIANT="extended-compressed"
-        msg "The legacy binary-managed sing-box variant will be reinstalled for Forkop"
+        msg "The legacy binary-managed sing-box variant will be reinstalled for Trafira"
         return 0
     fi
 
@@ -1812,7 +1812,7 @@ install_selected_sing_box() {
     esac
 
     [ -x /usr/bin/forkop ] || fail "forkop backend must be installed before sing-box component action"
-    msg "Installing selected sing-box variant through Forkop ucode backend"
+    msg "Installing selected sing-box variant through Trafira ucode backend"
     if ! /usr/bin/forkop component_action sing_box "$action" >"$output_file" 2>&1; then
         cat "$output_file" >&2 2>/dev/null || true
         fail "Failed to install selected sing-box variant"
@@ -1823,7 +1823,7 @@ cleanup_legacy_installation() {
     state_file="$TMP_DIR/install-state.env"
 
     install_json_ucode installer-cleanup-legacy >"$state_file" ||
-        fail "Failed to prepare the system before Forkop package installation"
+        fail "Failed to prepare the system before Trafira package installation"
 
     # shellcheck disable=SC1090
     . "$state_file"
@@ -1922,9 +1922,9 @@ migrate_legacy_configuration() {
         cp "$LEGACY_CONFIG_BACKUP" /etc/config/forkop ||
             fail "Failed to restore the legacy configuration for migration"
         chmod 0644 /etc/config/forkop ||
-            fail "Failed to set permissions on the Forkop configuration"
+            fail "Failed to set permissions on the Trafira configuration"
 
-        msg "Migrating the legacy configuration to Forkop"
+        msg "Migrating the legacy configuration to Trafira"
         if ! FORKOP_CONFIG_NAME="forkop" \
             FORKOP_LIB="/usr/lib/forkop" \
             ucode -L /usr/lib/forkop /usr/lib/forkop/config/migration.uc migrate-podkop; then
@@ -1932,7 +1932,7 @@ migrate_legacy_configuration() {
             fail "Legacy configuration migration failed; the original configuration was restored"
         fi
     else
-        warn "The legacy package had no readable configuration; Forkop defaults will be used"
+        warn "The legacy package had no readable configuration; Trafira defaults will be used"
     fi
 
     install_json_ucode installer-finalize-legacy ||
@@ -1950,7 +1950,7 @@ install_ui_packages() {
 post_install() {
     FORKOP_WAS_ENABLED="$FORKOP_WAS_ENABLED" FORKOP_WAS_RUNNING="$FORKOP_WAS_RUNNING" \
         install_json_ucode installer-post-install ||
-        fail "Failed to complete Forkop post-install actions"
+        fail "Failed to complete Trafira post-install actions"
 }
 
 main() {
@@ -1983,9 +1983,9 @@ main() {
     install_selected_sing_box
     post_install
 
-    msg "Forkop $FORKOP_PACKAGE_VERSION has been installed successfully"
+    msg "Trafira $FORKOP_PACKAGE_VERSION has been installed successfully"
     msg "Source release: ${REPO_OWNER}/${REPO_NAME}@${FORKOP_RELEASE_TAG}"
-    warn "Open LuCI and review your rules before enabling Forkop"
+    warn "Open LuCI and review your rules before enabling Trafira"
 }
 
 main "$@"

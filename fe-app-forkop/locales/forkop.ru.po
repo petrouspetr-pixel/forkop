@@ -210,7 +210,7 @@ msgid "By flag emoji from name"
 msgstr "По эмодзи флага из названия"
 
 msgid "ByeDPI listen address and port are assigned by Forkop and must not be set in the strategy."
-msgstr "Адрес и порт прослушивания ByeDPI назначаются Forkop и не должны задаваться в стратегии."
+msgstr "Адрес и порт прослушивания ByeDPI назначаются Trafira и не должны задаваться в стратегии."
 
 msgid "ByeDPI option does not accept a compact value: %s"
 msgstr "Опция ByeDPI не принимает компактное значение: %s"
@@ -344,8 +344,8 @@ msgstr "Условия"
 msgid "Config File Path"
 msgstr "Путь к файлу конфигурации"
 
-msgid "Configuration for Forkop service"
-msgstr "Настройки сервиса Forkop"
+msgid "Configuration for Trafira service"
+msgstr "Настройки сервиса Trafira"
 
 msgid "Configure User-Agent in the item settings"
 msgstr "Настройте User-Agent в настройках элемента"
@@ -398,8 +398,8 @@ msgstr "Дашборд сейчас недоступен"
 msgid "Default address for checking server availability and latency. URLTest uses its own address."
 msgstr "Адрес по умолчанию для проверки доступности и задержки серверов. Для URLTest используется собственный адрес."
 
-msgid "Delay in milliseconds before reloading Forkop after interface UP"
-msgstr "Задержка в миллисекундах перед перезапуском Forkop после поднятия интерфейса"
+msgid "Delay in milliseconds before reloading Trafira after interface UP"
+msgstr "Задержка в миллисекундах перед перезапуском Trafira после поднятия интерфейса"
 
 msgid "Delay value cannot be empty"
 msgstr "Значение задержки не может быть пустым"
@@ -444,7 +444,7 @@ msgid "Disable the QUIC protocol to improve compatibility or fix issues with vid
 msgstr "Отключить QUIC протокол для улучшения совместимости или исправления видео стриминга"
 
 msgid "Disabling interception is incompatible with action=zapret2 because Forkop sends matched traffic through NFQUEUE."
-msgstr "Отключение перехвата несовместимо с action=zapret2, потому что Forkop отправляет совпавший трафик через NFQUEUE."
+msgstr "Отключение перехвата несовместимо с action=zapret2, потому что Trafira отправляет совпавший трафик через NFQUEUE."
 
 msgid "Display name"
 msgstr "Отображаемое имя"
@@ -687,10 +687,10 @@ msgid "Expose this section as a local HTTP+SOCKS proxy"
 msgstr "Открыть эту секцию как локальный HTTP+SOCKS прокси"
 
 msgid "External nfqws config files bypass Forkop queue management and explicit validation."
-msgstr "Внешние конфиги nfqws обходят управление очередями и явную валидацию Forkop."
+msgstr "Внешние конфиги nfqws обходят управление очередями и явную валидацию Trafira."
 
 msgid "External nfqws2 config files bypass Forkop queue management and explicit validation."
-msgstr "Внешние конфиги nfqws2 обходят управление очередями и явную валидацию Forkop."
+msgstr "Внешние конфиги nfqws2 обходят управление очередями и явную валидацию Trafira."
 
 msgid "Failed to close connection"
 msgstr "Не удалось закрыть подключение"
@@ -741,61 +741,61 @@ msgid "Forced device routing"
 msgstr "Принудительная маршрутизация устройств"
 
 msgid "Forkop Error"
-msgstr "Ошибка Forkop"
+msgstr "Ошибка Trafira"
 
 msgid "Forkop manages ciadpi pid files itself, so pidfile options are not allowed here."
-msgstr "Forkop сам управляет pid-файлами ciadpi, поэтому параметры pidfile здесь запрещены."
+msgstr "Trafira сам управляет pid-файлами ciadpi, поэтому параметры pidfile здесь запрещены."
 
 msgid "Forkop manages the ciadpi process lifecycle itself, so daemon mode is not allowed here."
-msgstr "Forkop сам управляет жизненным циклом ciadpi, поэтому режим daemon здесь запрещён."
+msgstr "Trafira сам управляет жизненным циклом ciadpi, поэтому режим daemon здесь запрещён."
 
 msgid "Forkop manages the nfqws process lifecycle itself, so daemon mode is not allowed here."
-msgstr "Forkop сам управляет жизненным циклом nfqws, поэтому режим daemon здесь запрещён."
+msgstr "Trafira сам управляет жизненным циклом nfqws, поэтому режим daemon здесь запрещён."
 
 msgid "Forkop manages the nfqws2 process lifecycle itself, so daemon mode is not allowed here."
-msgstr "Forkop сам управляет жизненным циклом nfqws2, поэтому режим daemon здесь запрещён."
+msgstr "Trafira сам управляет жизненным циклом nfqws2, поэтому режим daemon здесь запрещён."
 
 msgid "Forkop service is stopped. Start the service to display connections."
-msgstr "Служба Forkop остановлена. Запустите сервис для отображения подключений."
+msgstr "Служба Trafira остановлена. Запустите сервис для отображения подключений."
 
 msgid "Forkop service is stopped. Start the service to display the dashboard."
-msgstr "Служба Forkop остановлена. Запустите сервис для отображения дашборда."
+msgstr "Служба Trafira остановлена. Запустите сервис для отображения дашборда."
 
-msgid "Forkop Settings"
-msgstr "Настройки Forkop"
+msgid "Trafira Settings"
+msgstr "Настройки Trafira"
 
-msgid "Forkop will not modify your DHCP configuration"
-msgstr "Forkop не будет изменять вашу конфигурацию DHCP"
+msgid "Trafira will not modify your DHCP configuration"
+msgstr "Trafira не будет изменять вашу конфигурацию DHCP"
 
 msgid "Forkop-managed ciadpi runtime has restarted"
-msgstr "ciadpi Forkop перезапускался"
+msgstr "ciadpi Trafira перезапускался"
 
 msgid "Forkop-managed ciadpi runtime is not ready"
-msgstr "ciadpi Forkop не готов"
+msgstr "ciadpi Trafira не готов"
 
 msgid "Forkop-managed ciadpi runtime is not running"
-msgstr "ciadpi Forkop не запущен"
+msgstr "ciadpi Trafira не запущен"
 
 msgid "Forkop-managed ciadpi runtime is ready"
-msgstr "ciadpi Forkop готов"
+msgstr "ciadpi Trafira готов"
 
 msgid "Forkop-managed nfqws runtime is not ready"
-msgstr "NFQWS Forkop не готов"
+msgstr "NFQWS Trafira не готов"
 
 msgid "Forkop-managed nfqws runtime is not running"
-msgstr "NFQWS Forkop не запущен"
+msgstr "NFQWS Trafira не запущен"
 
 msgid "Forkop-managed nfqws runtime is ready"
-msgstr "NFQWS Forkop готов"
+msgstr "NFQWS Trafira готов"
 
 msgid "Forkop-managed nfqws2 runtime is not ready"
-msgstr "NFQWS2 Forkop не готов"
+msgstr "NFQWS2 Trafira не готов"
 
 msgid "Forkop-managed nfqws2 runtime is not running"
-msgstr "NFQWS2 Forkop не запущен"
+msgstr "NFQWS2 Trafira не запущен"
 
 msgid "Forkop-managed nfqws2 runtime is ready"
-msgstr "NFQWS2 Forkop готов"
+msgstr "NFQWS2 Trafira готов"
 
 msgid "Fronting IP"
 msgstr "IP фронтинга"
@@ -807,7 +807,7 @@ msgid "Fronting proxy protocol"
 msgstr "Proxy protocol для фронтинга"
 
 msgid "Fuzzing is not supported here because Forkop needs deterministic runtime validation."
-msgstr "Fuzzing здесь не поддерживается, потому что Forkop нужна предсказуемая runtime-валидация."
+msgstr "Fuzzing здесь не поддерживается, потому что Trafira нужна предсказуемая runtime-валидация."
 
 msgid "Generate a random 16-character hexadecimal HWID"
 msgstr "Создать случайный 16-значный шестнадцатеричный HWID"
@@ -1563,7 +1563,7 @@ msgid "Resource selection by IP or CIDR inside nfqws2 is not supported here; sin
 msgstr "Выбор ресурсов по IP или CIDR внутри nfqws2 здесь не поддерживается; sing-box выбирает ресурсы до NFQUEUE."
 
 msgid "Restart Forkop"
-msgstr "Перезапустить Forkop"
+msgstr "Перезапустить Trafira"
 
 msgid "Resume updates"
 msgstr "Продолжить обновление"
@@ -1833,7 +1833,7 @@ msgid "Standalone ByeDPI autostart is enabled"
 msgstr "Автозапуск отдельной службы ByeDPI включен"
 
 msgid "Standalone ByeDPI is active together with Forkop ByeDPI rules"
-msgstr "Отдельная служба ByeDPI активна вместе с правилами ByeDPI в Forkop"
+msgstr "Отдельная служба ByeDPI активна вместе с правилами ByeDPI в Trafira"
 
 msgid "Standalone ByeDPI service is active"
 msgstr "Отдельная служба ByeDPI активна"
@@ -1842,7 +1842,7 @@ msgid "Standalone ByeDPI service is inactive"
 msgstr "Отдельная служба ByeDPI неактивна"
 
 msgid "Standalone Zapret is active together with Forkop Zapret rules"
-msgstr "Отдельная служба Zapret активна вместе с правилами Zapret в Forkop"
+msgstr "Отдельная служба Zapret активна вместе с правилами Zapret в Trafira"
 
 msgid "Standalone Zapret service is active"
 msgstr "Отдельная служба Zapret активна"
@@ -1854,7 +1854,7 @@ msgid "Standalone Zapret2 autostart is enabled"
 msgstr "Автозапуск отдельной службы Zapret2 включён"
 
 msgid "Standalone Zapret2 is active together with Forkop Zapret2 rules"
-msgstr "Отдельная служба Zapret2 активна вместе с правилами Zapret2 в Forkop"
+msgstr "Отдельная служба Zapret2 активна вместе с правилами Zapret2 в Trafira"
 
 msgid "Standalone Zapret2 service is active"
 msgstr "Отдельная служба Zapret2 активна"
@@ -1863,13 +1863,13 @@ msgid "Standalone Zapret2 service is inactive"
 msgstr "Отдельная служба Zapret2 неактивна"
 
 msgid "Start Forkop"
-msgstr "Запустить Forkop"
+msgstr "Запустить Trafira"
 
 msgid "Stop checking when URLTest group is not used. Use sing-box duration format like 1d, 12h or 30m."
 msgstr "Останавливать проверку если URLTest группа не используется. Используйте формат длительности sing-box, например 1d, 12h или 30m."
 
 msgid "Stop Forkop"
-msgstr "Остановить Forkop"
+msgstr "Остановить Trafira"
 
 msgid "Subnets from the list will be extracted and added to nftables"
 msgstr "IP-адреса и подсети из списка будут извлечены и добавлены в nftables"
@@ -1944,10 +1944,10 @@ msgid "Testing URL"
 msgstr "URL проверки"
 
 msgid "The desync fwmark is managed by Forkop for loop prevention and must not be overridden here."
-msgstr "Desync fwmark управляется Forkop для защиты от циклов и не должен переопределяться здесь."
+msgstr "Desync fwmark управляется Trafira для защиты от циклов и не должен переопределяться здесь."
 
 msgid "The NFQUEUE number is assigned by Forkop for each rule and must not be overridden here."
-msgstr "Номер NFQUEUE назначается Forkop для каждого правила и не должен переопределяться здесь."
+msgstr "Номер NFQUEUE назначается Trafira для каждого правила и не должен переопределяться здесь."
 
 msgid "The rule applies to the domain and all its subdomains. Use full:, keyword:, or regex: prefixes for exact match, keyword match, or regular expression."
 msgstr "Правило применяется к домену и всем его поддоменам. Для полного совпадения, совпадению по слову или регулярному выражению используйте префиксы full:, keyword: или regex:."
@@ -2013,7 +2013,7 @@ msgid "Traffic Total"
 msgstr "Всего трафика"
 
 msgid "Transparent proxy mode is incompatible with action=byedpi because Forkop connects to ciadpi through SOCKS."
-msgstr "Режим прозрачного прокси несовместим с action=byedpi, потому что Forkop подключается к ciadpi через SOCKS."
+msgstr "Режим прозрачного прокси несовместим с action=byedpi, потому что Trafira подключается к ciadpi через SOCKS."
 
 msgid "Transport"
 msgstr "Транспорт"
@@ -2061,13 +2061,13 @@ msgid "Unexpected ByeDPI strategy argument: %s"
 msgstr "Неожиданный аргумент стратегии ByeDPI: %s"
 
 msgid "Unexpected Forkop-managed ciadpi runtime is running"
-msgstr "Обнаружен лишний ciadpi Forkop"
+msgstr "Обнаружен лишний ciadpi Trafira"
 
 msgid "Unexpected Forkop-managed nfqws runtime is running"
-msgstr "Обнаружен лишний NFQWS Forkop"
+msgstr "Обнаружен лишний NFQWS Trafira"
 
 msgid "Unexpected Forkop-managed nfqws2 runtime is running"
-msgstr "Обнаружен лишний NFQWS2 Forkop"
+msgstr "Обнаружен лишний NFQWS2 Trafira"
 
 msgid "Unexpected standalone token. Use explicit flags such as --name or --name=value."
 msgstr "Неожиданный отдельный токен. Используйте явные флаги вида --имя или --имя=значение."
@@ -2232,7 +2232,7 @@ msgid "WAN public IP"
 msgstr "Публичный WAN IP"
 
 msgid "What Forkop should do when this section matches"
-msgstr "Что Forkop должен делать при совпадении этой секции"
+msgstr "Что Trafira должен делать при совпадении этой секции"
 
 msgid "When switching to another level, test every server and select the fastest instead of the first working one."
 msgstr "При переходе на другой уровень тестировать все сервера и выбирать самый быстрый, а не первый работающий."
@@ -2250,7 +2250,7 @@ msgid "You can select Output Network Interface, by default autodetect"
 msgstr "Вы можете выбрать выходной сетевой интерфейс, по умолчанию он определяется автоматически."
 
 msgid "Zapret hostlist templates are not supported here because Forkop does not expand them for per-rule NFQWS strategies."
-msgstr "Шаблоны hostlist zapret здесь не поддерживаются, потому что Forkop не разворачивает их для per-rule стратегий NFQWS."
+msgstr "Шаблоны hostlist zapret здесь не поддерживаются, потому что Trafira не разворачивает их для per-rule стратегий NFQWS."
 
 msgid "Zapret package is installed"
 msgstr "Пакет Zapret установлен"
@@ -2271,7 +2271,7 @@ msgid "Zapret sing-box outbound is not configured"
 msgstr "sing-box outbound для Zapret не настроен"
 
 msgid "Zapret2 hostlist templates are not supported here because Forkop does not expand them for per-rule NFQWS2 strategies."
-msgstr "Шаблоны hostlist Zapret2 здесь не поддерживаются, потому что Forkop не разворачивает их для per-rule стратегий NFQWS2."
+msgstr "Шаблоны hostlist Zapret2 здесь не поддерживаются, потому что Trafira не разворачивает их для per-rule стратегий NFQWS2."
 
 msgid "Zapret2 package is installed"
 msgstr "Пакет Zapret2 установлен"
@@ -2305,8 +2305,8 @@ msgstr "Количество последовательных успешных �
 msgid "Failover implementation"
 msgstr "Реализация переключения при сбое"
 
-msgid "Forkop watchdog"
-msgstr "Контроль Forkop"
+msgid "Trafira watchdog"
+msgstr "Контроль Trafira"
 
 msgid "Failed server retry interval"
 msgstr "Интервал повторной попытки для недоступного сервера"
@@ -2318,7 +2318,7 @@ msgid "Native fallback (sing-box extended)"
 msgstr "Нативный fallback (sing-box extended)"
 
 msgid "Native fallback reacts to real connection failures and requires sing-box extended. The watchdog mode works with all supported sing-box variants."
-msgstr "Нативный fallback реагирует на реальные ошибки соединения и требует sing-box extended. Режим контроля Forkop работает со всеми поддерживаемыми вариантами sing-box."
+msgstr "Нативный fallback реагирует на реальные ошибки соединения и требует sing-box extended. Режим контроля Trafira работает со всеми поддерживаемыми вариантами sing-box."
 
 msgid "DoH client certificate authentication"
 msgstr "Аутентификация DoH клиентским сертификатом"
