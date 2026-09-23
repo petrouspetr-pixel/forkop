@@ -94,6 +94,29 @@ describe('TrafiraShellMethods.componentAction', () => {
     });
   });
 
+  it('preserves the disk preflight error from a completed installation job', async () => {
+    const result = {
+      success: false,
+      running: false,
+      component: 'sing_box',
+      action: 'install_extended',
+      message:
+        'Insufficient free space on /overlay: 1 MiB available; at least 8 MiB required. No packages were changed.',
+      changed: false,
+    };
+    mocks.fsRead.mockResolvedValue(JSON.stringify(result));
+
+    const response = TrafiraShellMethods.waitComponentActionJob(
+      'disk-full-job',
+      'sing_box',
+      'install_extended',
+    );
+    await vi.advanceTimersByTimeAsync(3000);
+
+    await expect(response).resolves.toEqual({ success: true, data: result });
+    expect(mocks.executeShellCommand).not.toHaveBeenCalled();
+  });
+
   it('keeps following a component job after the former browser-side wait timeout while the backend reports it running', async () => {
     let stateReads = 0;
 

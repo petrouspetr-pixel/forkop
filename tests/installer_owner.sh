@@ -4,9 +4,6 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 INSTALLER="$ROOT_DIR/install.sh"
 WORK_DIR="$(mktemp -d)"
-LEGACY_BRAND="$(printf '\160\157\144\153\157\160')"
-LEGACY_BACKEND="${LEGACY_BRAND}-plus"
-LEGACY_CONFIG_ALT="${LEGACY_BRAND}_plus"
 
 cleanup() {
   if [ -n "${RETRY_PID:-}" ]; then
@@ -126,21 +123,17 @@ grep -Fq 'run_args([ bin_path, "restore_dnsmasq" ])' "$INSTALLER" ||
   fail "installer dnsmasq restore must prefer the active backend entrypoint"
 grep -Fq 'else if (mode == "dnsmasq-failsafe-restore")' "$INSTALLER" ||
   fail "dnsmasq restore fallback mode must remain available in embedded ucode helper"
-grep -Fq 'else if (mode == "installer-cleanup-legacy")' "$INSTALLER" ||
+grep -Fq 'else if (mode == "installer-prepare-trafira")' "$INSTALLER" ||
   fail "installer cleanup must be exposed as an embedded ucode mode"
-grep -Fq 'else if (mode == "installer-finalize-legacy")' "$INSTALLER" ||
-  fail "installer legacy file cleanup must be exposed as an embedded ucode mode"
 grep -Fq 'else if (mode == "installer-post-install")' "$INSTALLER" ||
   fail "installer post-install must be exposed as an embedded ucode mode"
-grep -Fq 'install_json_ucode installer-cleanup-legacy' "$INSTALLER" ||
+grep -Fq 'install_json_ucode installer-prepare-trafira' "$INSTALLER" ||
   fail "install.sh cleanup must delegate to embedded ucode"
 grep -Fq 'install_json_ucode installer-post-install' "$INSTALLER" ||
   fail "install.sh post-install must delegate to embedded ucode"
 if grep -Fq 'installer_config_migration_path()' "$INSTALLER"; then
   fail "install.sh must not embed configuration migration logic"
 fi
-grep -Fq 'ucode -L /usr/lib/trafira /usr/lib/trafira/config/migration.uc migrate-podkop' "$INSTALLER" ||
-  fail "install.sh must delegate the legacy transition to the installed migration module"
 
 if grep -n -E 'restore_trafira_dnsmasq_failsafe|remember_service_state|stop_conflicting_services|deactivate_original_trafira_if_present|remove_conflicting_dns_proxy|pkg_remove_if_installed|pkg_remove_matching_prefix|pkg_list_installed_names' "$INSTALLER" >/dev/null 2>&1; then
   fail "install.sh must not keep shell cleanup/remove service owners"
@@ -155,21 +148,20 @@ awk '
   in_main && /decide_i18n_installation/ { i18n = NR }
   in_main && /pkg_list_update/ { update = NR }
   in_main && /ensure_bootstrap_ucode_runtime/ { ensure = NR }
-  in_main && /detect_legacy_installation/ { detect = NR }
-  in_main && /cleanup_legacy_installation/ { cleanup = NR }
+  in_main && /reject_legacy_packages/ { detect = NR }
+  in_main && /prepare_trafira_installation/ { cleanup = NR }
   in_main && /install_backend_package/ { backend = NR }
-  in_main && /migrate_legacy_configuration/ { migration = NR }
   in_main && /install_ui_packages/ { ui = NR }
   in_main && /install_selected_sing_box/ { sing_box = NR }
   in_main && /^[[:space:]]*\}/ { in_main = 0 }
   END {
     if (detect > 0 && i18n > detect && select_sing_box > i18n &&
         update > select_sing_box && ensure > update && cleanup > ensure &&
-        backend > cleanup && migration > backend && ui > migration && sing_box > ui)
+        backend > cleanup && ui > backend && sing_box > ui)
       exit 0
     exit 1
   }
-' "$INSTALLER" || fail "install.sh must ask initial questions before package update, then migrate and finish installation in order"
+' "$INSTALLER" || fail "install.sh must ask initial questions before package update, then finish installation in order"
 
 helper="$WORK_DIR/install-json.uc"
 awk '
@@ -178,18 +170,6 @@ awk '
   capture { print }
 ' "$INSTALLER" > "$helper"
 [ -s "$helper" ] || fail "failed to extract embedded installer ucode helper"
-
-detect_legacy_block="$WORK_DIR/detect-legacy.block"
-awk '
-  /^detect_legacy_installation\(\)/ { capture = 1 }
-  capture { print }
-  capture && /^}/ { exit }
-' "$INSTALLER" > "$detect_legacy_block"
-[ -s "$detect_legacy_block" ] || fail "failed to extract legacy detection helper"
-grep -Fq 'if ! pkg_is_installed "$LEGACY_BACKEND_PACKAGE"; then' "$detect_legacy_block" ||
-  fail "legacy detection must inspect configuration when the package is absent"
-grep -Fq 'legacy_config_present=0' "$detect_legacy_block" ||
-  fail "legacy detection must track a readable config-only legacy installation"
 
 printf '%s\n' '{"tag_name":"0.0.1"}' | ucode "$helper" release-tag | grep -Fxq '0.0.1' ||
   fail "embedded helper release-tag mode must parse release JSON"
@@ -209,12 +189,6 @@ case "$1" in
       'https-dns-proxy - 1.0' \
       'luci-app-https-dns-proxy - 1.0' \
       'luci-i18n-https-dns-proxy-ru - 1.0'
-    if [ -n "${TRAFIRA_INSTALLER_FAKE_LEGACY_BACKEND:-}" ]; then
-      printf '%s\n' \
-        "$TRAFIRA_INSTALLER_FAKE_LEGACY_BACKEND - 1.0" \
-        "luci-app-$TRAFIRA_INSTALLER_FAKE_LEGACY_BACKEND - 1.0" \
-        "luci-i18n-$TRAFIRA_INSTALLER_FAKE_LEGACY_BACKEND-ru - 1.0"
-    fi
     ;;
   remove)
     shift
@@ -297,9 +271,6 @@ TRAFIRA_INSTALLER_RU_LMO="$WORK_DIR/missing-ru.lmo" \
 TRAFIRA_INSTALLER_EN_LMO="$WORK_DIR/missing-en.lmo" \
 TRAFIRA_INSTALLER_RU_LUA="$WORK_DIR/missing-ru.lua" \
 TRAFIRA_INSTALLER_EN_LUA="$WORK_DIR/missing-en.lua" \
-TRAFIRA_INSTALLER_LEGACY_BASE_INIT="$WORK_DIR/missing-original-init" \
-TRAFIRA_INSTALLER_LEGACY_BRAND="$LEGACY_BRAND" \
-TRAFIRA_INSTALLER_LEGACY_BACKEND="$LEGACY_BACKEND" \
 TRAFIRA_INSTALLER_RC_DIR="$WORK_DIR/rc.d" \
 TRAFIRA_INSTALLER_START_RETRY_FILE="$WORK_DIR/start.retry" \
 TRAFIRA_INSTALLER_START_RETRY_PID_FILE="$WORK_DIR/start-retry.pid" \
@@ -309,7 +280,7 @@ TRAFIRA_INSTALLER_SERVICE_ACTION_TIMEOUT=3 \
 TRAFIRA_INSTALLER_INIT_LOG="$WORK_DIR/hanging-init.log" \
 TRAFIRA_INSTALLER_HANG_PID_LOG="$HANG_PID_LOG" \
 TRAFIRA_UCI_STATE_FILE="$WORK_DIR/empty-uci.state" \
-  ucode "$helper" installer-cleanup-legacy > "$WORK_DIR/hanging-state.env"
+  ucode "$helper" installer-prepare-trafira > "$WORK_DIR/hanging-state.env"
 hanging_elapsed="$(($(date +%s) - hanging_started))"
 [ "$hanging_elapsed" -lt 15 ] ||
   fail "installer cleanup did not bound hanging init.d probes (${hanging_elapsed}s)"
@@ -349,11 +320,8 @@ printf '%s\n' '1' |
   TRAFIRA_INSTALLER_EN_LMO="$WORK_DIR/missing-en.lmo" \
   TRAFIRA_INSTALLER_RU_LUA="$WORK_DIR/missing-ru.lua" \
   TRAFIRA_INSTALLER_EN_LUA="$WORK_DIR/missing-en.lua" \
-  TRAFIRA_INSTALLER_LEGACY_BASE_INIT="$WORK_DIR/missing-original-init" \
-  TRAFIRA_INSTALLER_LEGACY_BRAND="$LEGACY_BRAND" \
-  TRAFIRA_INSTALLER_LEGACY_BACKEND="$LEGACY_BACKEND" \
   TRAFIRA_UCI_STATE_FILE="$WORK_DIR/empty-uci.state" \
-    ucode "$helper" installer-cleanup-legacy >"$WORK_DIR/conflict-state.env" 2>"$WORK_DIR/conflict.err"
+    ucode "$helper" installer-prepare-trafira >"$WORK_DIR/conflict-state.env" 2>"$WORK_DIR/conflict.err"
 
 grep -Fxq 'https-dns-proxy' "$WORK_DIR/opkg.log" ||
   fail "installer cleanup must remove confirmed https-dns-proxy conflict"
@@ -375,207 +343,6 @@ exit 0
 SH
   chmod 0755 "$service_path"
 }
-
-write_fake_service_init "$WORK_DIR/legacy-init"
-
-cat >"$WORK_DIR/legacy-bin" <<'SH'
-#!/usr/bin/env sh
-printf '%s\n' "$*" >> "$TRAFIRA_INSTALLER_BIN_LOG"
-case "$1" in
-  get_status) printf '%s\n' '{"running":1}' ;;
-  restore_dnsmasq) exit "${TRAFIRA_INSTALLER_FAIL_BACKEND_RESTORE:-0}" ;;
-esac
-exit 0
-SH
-chmod 0755 "$WORK_DIR/legacy-bin"
-
-: >"$WORK_DIR/init.log"
-: >"$WORK_DIR/bin.log"
-state="$WORK_DIR/state.env"
-PATH="$WORK_DIR:$PATH" \
-TRAFIRA_INSTALLER_INIT="$WORK_DIR/missing-trafira-init" \
-TRAFIRA_INSTALLER_BIN="$WORK_DIR/missing-trafira-bin" \
-TRAFIRA_INSTALLER_LIB="$WORK_DIR/missing-trafira-lib" \
-TRAFIRA_INSTALLER_UCI_DEFAULTS="$WORK_DIR/uci-defaults" \
-TRAFIRA_INSTALLER_LUCI_VIEW="$WORK_DIR/luci-view" \
-TRAFIRA_INSTALLER_MENU_JSON="$WORK_DIR/menu.json" \
-TRAFIRA_INSTALLER_ACL_JSON="$WORK_DIR/acl.json" \
-TRAFIRA_INSTALLER_RU_LMO="$WORK_DIR/ru.lmo" \
-TRAFIRA_INSTALLER_EN_LMO="$WORK_DIR/en.lmo" \
-TRAFIRA_INSTALLER_RU_LUA="$WORK_DIR/ru.lua" \
-TRAFIRA_INSTALLER_EN_LUA="$WORK_DIR/en.lua" \
-TRAFIRA_INSTALLER_LEGACY_BASE_INIT="$WORK_DIR/missing-original-init" \
-TRAFIRA_INSTALLER_LEGACY_BRAND="$LEGACY_BRAND" \
-TRAFIRA_INSTALLER_LEGACY_BACKEND="$LEGACY_BACKEND" \
-TRAFIRA_INSTALLER_LEGACY_CONFIG_ALT="$LEGACY_CONFIG_ALT" \
-TRAFIRA_INSTALLER_LEGACY_INIT="$WORK_DIR/legacy-init" \
-TRAFIRA_INSTALLER_LEGACY_BIN="$WORK_DIR/legacy-bin" \
-TRAFIRA_INSTALLER_LEGACY_LIB="$WORK_DIR/legacy-lib" \
-TRAFIRA_INSTALLER_FAKE_LEGACY_BACKEND="$LEGACY_BACKEND" \
-TRAFIRA_INSTALLER_OPKG_LOG="$WORK_DIR/opkg.log" \
-TRAFIRA_INSTALLER_INIT_LOG="$WORK_DIR/init.log" \
-TRAFIRA_INSTALLER_BIN_LOG="$WORK_DIR/bin.log" \
-TRAFIRA_INSTALLER_FAIL_BACKEND_RESTORE=1 \
-TRAFIRA_UCI_STATE_FILE="$WORK_DIR/empty-uci.state" \
-  ucode "$helper" installer-cleanup-legacy >"$state"
-
-grep -Fxq 'TRAFIRA_WAS_ENABLED=1' "$state" ||
-  fail "installer cleanup must export previous enabled state"
-grep -Fxq 'TRAFIRA_WAS_RUNNING=1' "$state" ||
-  fail "installer cleanup must export previous running state"
-grep -Fxq 'TRAFIRA_LEGACY_DETECTED=1' "$state" ||
-  fail "installer cleanup must report the legacy package transition"
-grep -Fxq 'stop' "$WORK_DIR/init.log" ||
-  fail "installer cleanup must stop the legacy service through ucode owner"
-grep -Fxq 'disable' "$WORK_DIR/init.log" ||
-  fail "installer cleanup must disable the legacy service through ucode owner"
-grep -Fxq 'restore_dnsmasq' "$WORK_DIR/bin.log" ||
-  fail "installer cleanup must prefer backend restore_dnsmasq"
-grep -Fxq "$LEGACY_BACKEND" "$WORK_DIR/opkg.log" ||
-  fail "installer cleanup must remove the legacy backend package"
-grep -Fxq "luci-app-$LEGACY_BACKEND" "$WORK_DIR/opkg.log" ||
-  fail "installer cleanup must remove the legacy LuCI package"
-
-if printf '%s\n' '1' |
-  PATH="$WORK_DIR:$PATH" \
-  TRAFIRA_INSTALLER_OPKG_LOG="$WORK_DIR/opkg.log" \
-  TRAFIRA_INSTALLER_FAIL_REMOVE="$LEGACY_BACKEND" \
-  TRAFIRA_INSTALLER_FAKE_LEGACY_BACKEND="$LEGACY_BACKEND" \
-  TRAFIRA_INSTALLER_LEGACY_BRAND="$LEGACY_BRAND" \
-  TRAFIRA_INSTALLER_LEGACY_BACKEND="$LEGACY_BACKEND" \
-  TRAFIRA_UCI_STATE_FILE="$WORK_DIR/empty-uci.state" \
-    ucode "$helper" installer-cleanup-legacy >/dev/null 2>&1; then
-  fail "installer cleanup must stop when the package manager cannot remove the legacy backend"
-fi
-
-legacy_config="$WORK_DIR/legacy-config"
-legacy_config_alt="$WORK_DIR/legacy-config-alt"
-legacy_persistent="$WORK_DIR/legacy-persistent"
-trafira_persistent="$WORK_DIR/trafira-persistent"
-legacy_runtime="$WORK_DIR/legacy-runtime"
-legacy_tmp="$WORK_DIR/legacy-tmp"
-legacy_tmp_alt="$WORK_DIR/legacy-tmp-alt"
-legacy_base_config="$WORK_DIR/legacy-base-config"
-legacy_base_persistent="$WORK_DIR/legacy-base-persistent"
-legacy_base_runtime="$WORK_DIR/legacy-base-runtime"
-legacy_base_tmp="$WORK_DIR/legacy-base-tmp"
-legacy_base_init="$WORK_DIR/legacy-base-init"
-legacy_base_bin="$WORK_DIR/legacy-base-bin"
-legacy_base_lib="$WORK_DIR/legacy-base-lib"
-legacy_base_uci_defaults="$WORK_DIR/legacy-base-uci-defaults"
-legacy_base_luci_view="$WORK_DIR/legacy-base-luci-view"
-legacy_base_menu="$WORK_DIR/legacy-base-menu"
-legacy_base_acl="$WORK_DIR/legacy-base-acl"
-legacy_base_i18n="$WORK_DIR/legacy-base-i18n"
-legacy_tmp_package="$WORK_DIR/luci-app-${LEGACY_BRAND}.ipk"
-legacy_scan_root="$WORK_DIR/legacy-scan-root"
-legacy_nested_uci="$legacy_scan_root/.uci/${LEGACY_BACKEND}"
-legacy_nested_lock="$legacy_scan_root/lock/procd_${LEGACY_BACKEND}.lock"
-legacy_nested_backup="$legacy_scan_root/audit/${LEGACY_BACKEND}.config"
-mkdir -p \
-  "$legacy_persistent/tailscale/server-new" \
-  "$legacy_persistent/tailscale/server-existing" \
-  "$trafira_persistent/tailscale/server-existing" \
-  "$legacy_runtime" "$legacy_tmp" "$legacy_tmp_alt"
-printf '%s\n' 'legacy-node-identity' >"$legacy_persistent/tailscale/server-new/node.key"
-printf '%s\n' 'stale-legacy-identity' >"$legacy_persistent/tailscale/server-existing/node.key"
-printf '%s\n' 'current-trafira-identity' >"$trafira_persistent/tailscale/server-existing/node.key"
-mkdir -p "$(dirname "$legacy_nested_uci")" "$(dirname "$legacy_nested_lock")" "$(dirname "$legacy_nested_backup")"
-touch "$legacy_config" "$legacy_config_alt" "$legacy_config-opkg"
-touch \
-  "$legacy_base_config.backup" \
-  "$legacy_base_persistent.cache" \
-  "$legacy_base_runtime.internal" \
-  "$legacy_base_tmp.log" \
-  "$legacy_base_init.old" \
-  "$legacy_base_bin.bak" \
-  "$legacy_base_lib.prev" \
-  "$legacy_base_uci_defaults.done" \
-  "$legacy_base_luci_view.old" \
-  "$legacy_base_menu.json" \
-  "$legacy_base_acl.json" \
-  "$legacy_base_i18n.ru.lmo" \
-  "$legacy_tmp_package" \
-  "$legacy_nested_uci" \
-  "$legacy_nested_lock" \
-  "$legacy_nested_backup"
-TRAFIRA_INSTALLER_LEGACY_BRAND="$LEGACY_BRAND" \
-TRAFIRA_INSTALLER_LEGACY_BACKEND="$LEGACY_BACKEND" \
-TRAFIRA_INSTALLER_LEGACY_CONFIG_ALT="$LEGACY_CONFIG_ALT" \
-TRAFIRA_INSTALLER_LEGACY_CONFIG="$legacy_config" \
-TRAFIRA_INSTALLER_LEGACY_CONFIG_FILE_ALT="$legacy_config_alt" \
-TRAFIRA_INSTALLER_LEGACY_PERSISTENT_DIR="$legacy_persistent" \
-TRAFIRA_INSTALLER_PERSISTENT_DIR="$trafira_persistent" \
-TRAFIRA_INSTALLER_LEGACY_RUNTIME_DIR="$legacy_runtime" \
-TRAFIRA_INSTALLER_LEGACY_TMP_DIR="$legacy_tmp" \
-TRAFIRA_INSTALLER_LEGACY_TMP_ALT_DIR="$legacy_tmp_alt" \
-TRAFIRA_INSTALLER_LEGACY_BASE_CONFIG="$legacy_base_config" \
-TRAFIRA_INSTALLER_LEGACY_BASE_PERSISTENT_DIR="$legacy_base_persistent" \
-TRAFIRA_INSTALLER_LEGACY_BASE_RUNTIME_DIR="$legacy_base_runtime" \
-TRAFIRA_INSTALLER_LEGACY_BASE_TMP_DIR="$legacy_base_tmp" \
-TRAFIRA_INSTALLER_LEGACY_BASE_INIT="$legacy_base_init" \
-TRAFIRA_INSTALLER_LEGACY_BASE_BIN="$legacy_base_bin" \
-TRAFIRA_INSTALLER_LEGACY_BASE_LIB="$legacy_base_lib" \
-TRAFIRA_INSTALLER_LEGACY_BASE_UCI_DEFAULTS="$legacy_base_uci_defaults" \
-TRAFIRA_INSTALLER_LEGACY_BASE_LUCI_VIEW="$legacy_base_luci_view" \
-TRAFIRA_INSTALLER_LEGACY_BASE_MENU_JSON="$legacy_base_menu" \
-TRAFIRA_INSTALLER_LEGACY_BASE_ACL_JSON="$legacy_base_acl" \
-TRAFIRA_INSTALLER_LEGACY_BASE_I18N="$legacy_base_i18n" \
-TRAFIRA_INSTALLER_LEGACY_TMP_PACKAGE_GLOB="$WORK_DIR/*${LEGACY_BRAND}*" \
-TRAFIRA_INSTALLER_LEGACY_SCAN_ROOTS="$legacy_scan_root" \
-  ucode "$helper" installer-finalize-legacy
-[ "$(cat "$trafira_persistent/tailscale/server-new/node.key")" = 'legacy-node-identity' ] ||
-  fail "installer finalization must migrate legacy Tailscale node identity"
-[ "$(cat "$trafira_persistent/tailscale/server-existing/node.key")" = 'current-trafira-identity' ] ||
-  fail "installer finalization must not overwrite existing Trafira Tailscale state"
-for path in "$legacy_config" "$legacy_config_alt" "$legacy_config-opkg" \
-  "$legacy_persistent" "$legacy_runtime" "$legacy_tmp" "$legacy_tmp_alt"; do
-  [ ! -e "$path" ] || fail "installer finalization left a legacy path behind: $path"
-done
-for path in \
-  "$legacy_base_config.backup" "$legacy_base_persistent.cache" \
-  "$legacy_base_runtime.internal" "$legacy_base_tmp.log" \
-  "$legacy_base_init.old" "$legacy_base_bin.bak" "$legacy_base_lib.prev" \
-  "$legacy_base_uci_defaults.done" "$legacy_base_luci_view.old" \
-  "$legacy_base_menu.json" "$legacy_base_acl.json" "$legacy_base_i18n.ru.lmo" \
-  "$legacy_tmp_package" "$legacy_nested_uci" "$legacy_nested_lock" \
-  "$legacy_nested_backup"; do
-  [ -e "$path" ] || fail "installer finalization removed unrelated base files or recovery archives: $path"
-done
-
-mkdir -p "$legacy_persistent/tailscale/server-failed"
-printf '%s\n' 'preserve-on-failure' >"$legacy_persistent/tailscale/server-failed/node.key"
-trafira_persistent_file="$WORK_DIR/trafira-persistent-file"
-touch "$trafira_persistent_file"
-if TRAFIRA_INSTALLER_LEGACY_BRAND="$LEGACY_BRAND" \
-  TRAFIRA_INSTALLER_LEGACY_BACKEND="$LEGACY_BACKEND" \
-  TRAFIRA_INSTALLER_LEGACY_CONFIG_ALT="$LEGACY_CONFIG_ALT" \
-  TRAFIRA_INSTALLER_LEGACY_CONFIG="$legacy_config" \
-  TRAFIRA_INSTALLER_LEGACY_CONFIG_FILE_ALT="$legacy_config_alt" \
-  TRAFIRA_INSTALLER_LEGACY_PERSISTENT_DIR="$legacy_persistent" \
-  TRAFIRA_INSTALLER_PERSISTENT_DIR="$trafira_persistent_file" \
-  TRAFIRA_INSTALLER_LEGACY_RUNTIME_DIR="$legacy_runtime" \
-  TRAFIRA_INSTALLER_LEGACY_TMP_DIR="$legacy_tmp" \
-  TRAFIRA_INSTALLER_LEGACY_TMP_ALT_DIR="$legacy_tmp_alt" \
-  TRAFIRA_INSTALLER_LEGACY_BASE_CONFIG="$legacy_base_config" \
-  TRAFIRA_INSTALLER_LEGACY_BASE_PERSISTENT_DIR="$legacy_base_persistent" \
-  TRAFIRA_INSTALLER_LEGACY_BASE_RUNTIME_DIR="$legacy_base_runtime" \
-  TRAFIRA_INSTALLER_LEGACY_BASE_TMP_DIR="$legacy_base_tmp" \
-  TRAFIRA_INSTALLER_LEGACY_BASE_INIT="$legacy_base_init" \
-  TRAFIRA_INSTALLER_LEGACY_BASE_BIN="$legacy_base_bin" \
-  TRAFIRA_INSTALLER_LEGACY_BASE_LIB="$legacy_base_lib" \
-  TRAFIRA_INSTALLER_LEGACY_BASE_UCI_DEFAULTS="$legacy_base_uci_defaults" \
-  TRAFIRA_INSTALLER_LEGACY_BASE_LUCI_VIEW="$legacy_base_luci_view" \
-  TRAFIRA_INSTALLER_LEGACY_BASE_MENU_JSON="$legacy_base_menu" \
-  TRAFIRA_INSTALLER_LEGACY_BASE_ACL_JSON="$legacy_base_acl" \
-  TRAFIRA_INSTALLER_LEGACY_BASE_I18N="$legacy_base_i18n" \
-  TRAFIRA_INSTALLER_LEGACY_TMP_PACKAGE_GLOB="$WORK_DIR/missing-${LEGACY_BRAND}*" \
-  TRAFIRA_INSTALLER_LEGACY_SCAN_ROOTS="$legacy_scan_root" \
-    ucode "$helper" installer-finalize-legacy >/dev/null 2>&1; then
-  fail "installer finalization must fail when legacy Tailscale state cannot be migrated"
-fi
-[ "$(cat "$legacy_persistent/tailscale/server-failed/node.key")" = 'preserve-on-failure' ] ||
-  fail "failed Tailscale migration must preserve the legacy identity"
 
 write_fake_service_init "$WORK_DIR/trafira-init"
 touch "$WORK_DIR/luci-indexcache.one" "$WORK_DIR/luci-indexcache.two"

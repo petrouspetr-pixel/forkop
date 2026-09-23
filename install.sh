@@ -14,7 +14,6 @@ FETCHER=""
 TMP_DIR=""
 TRAFIRA_WAS_ENABLED=0
 TRAFIRA_WAS_RUNNING=0
-TRAFIRA_LEGACY_DETECTED=0
 TRAFIRA_I18N_REQUESTED=0
 INSTALLER_LANG="en"
 SING_BOX_INSTALL_VARIANT=""
@@ -31,10 +30,6 @@ TRAFIRA_I18N_URL=""
 TRAFIRA_I18N_NAME=""
 TRAFIRA_I18N_FILE=""
 TRAFIRA_PACKAGE_VERSION=""
-LEGACY_BRAND="$(printf '\160\157\144\153\157\160')"
-LEGACY_BACKEND_PACKAGE="${LEGACY_BRAND}-plus"
-LEGACY_CONFIG_PACKAGE_ALT="${LEGACY_BRAND}_plus"
-LEGACY_CONFIG_BACKUP=""
 
 command -v apk >/dev/null 2>&1 && PKG_IS_APK=1
 
@@ -588,36 +583,6 @@ const INSTALLER_EN_LMO = env("TRAFIRA_INSTALLER_EN_LMO", "/usr/lib/lua/luci/i18n
 const INSTALLER_RU_LUA = env("TRAFIRA_INSTALLER_RU_LUA", "/usr/lib/lua/luci/i18n/trafira.ru.lua");
 const INSTALLER_EN_LUA = env("TRAFIRA_INSTALLER_EN_LUA", "/usr/lib/lua/luci/i18n/trafira.en.lua");
 const INSTALLER_RPCD_INIT = env("TRAFIRA_INSTALLER_RPCD_INIT", "/etc/init.d/rpcd");
-const LEGACY_BRAND = env("TRAFIRA_INSTALLER_LEGACY_BRAND", "");
-const LEGACY_BACKEND_PACKAGE = env("TRAFIRA_INSTALLER_LEGACY_BACKEND", LEGACY_BRAND + "-plus");
-const LEGACY_CONFIG_PACKAGE_ALT = env("TRAFIRA_INSTALLER_LEGACY_CONFIG_ALT", LEGACY_BRAND + "_plus");
-const INSTALLER_LEGACY_INIT = env("TRAFIRA_INSTALLER_LEGACY_INIT", "/etc/init.d/" + LEGACY_BACKEND_PACKAGE);
-const INSTALLER_LEGACY_BASE_INIT = env("TRAFIRA_INSTALLER_LEGACY_BASE_INIT", "/etc/init.d/" + LEGACY_BRAND);
-const INSTALLER_LEGACY_BASE_BIN = env("TRAFIRA_INSTALLER_LEGACY_BASE_BIN", "/usr/bin/" + LEGACY_BRAND);
-const INSTALLER_LEGACY_BASE_LIB = env("TRAFIRA_INSTALLER_LEGACY_BASE_LIB", "/usr/lib/" + LEGACY_BRAND);
-const INSTALLER_LEGACY_BASE_UCI_DEFAULTS = env("TRAFIRA_INSTALLER_LEGACY_BASE_UCI_DEFAULTS", "/etc/uci-defaults/50_luci-" + LEGACY_BRAND);
-const INSTALLER_LEGACY_BASE_LUCI_VIEW = env("TRAFIRA_INSTALLER_LEGACY_BASE_LUCI_VIEW", "/www/luci-static/resources/view/" + LEGACY_BRAND);
-const INSTALLER_LEGACY_BASE_MENU_JSON = env("TRAFIRA_INSTALLER_LEGACY_BASE_MENU_JSON", "/usr/share/luci/menu.d/luci-app-" + LEGACY_BRAND);
-const INSTALLER_LEGACY_BASE_ACL_JSON = env("TRAFIRA_INSTALLER_LEGACY_BASE_ACL_JSON", "/usr/share/rpcd/acl.d/luci-app-" + LEGACY_BRAND);
-const INSTALLER_LEGACY_BASE_I18N = env("TRAFIRA_INSTALLER_LEGACY_BASE_I18N", "/usr/lib/lua/luci/i18n/" + LEGACY_BRAND);
-const INSTALLER_LEGACY_BASE_CONFIG = env("TRAFIRA_INSTALLER_LEGACY_BASE_CONFIG", "/etc/config/" + LEGACY_BRAND);
-const INSTALLER_LEGACY_BASE_PERSISTENT_DIR = env("TRAFIRA_INSTALLER_LEGACY_BASE_PERSISTENT_DIR", "/etc/" + LEGACY_BRAND);
-const INSTALLER_LEGACY_BASE_RUNTIME_DIR = env("TRAFIRA_INSTALLER_LEGACY_BASE_RUNTIME_DIR", "/var/run/" + LEGACY_BRAND);
-const INSTALLER_LEGACY_BASE_TMP_DIR = env("TRAFIRA_INSTALLER_LEGACY_BASE_TMP_DIR", "/tmp/" + LEGACY_BRAND);
-const INSTALLER_LEGACY_TMP_PACKAGE_GLOB = env("TRAFIRA_INSTALLER_LEGACY_TMP_PACKAGE_GLOB", "/tmp/*" + LEGACY_BRAND + "*");
-const INSTALLER_LEGACY_SCAN_ROOTS = env("TRAFIRA_INSTALLER_LEGACY_SCAN_ROOTS", "/tmp /var/run /etc /usr/lib /usr/share/luci /usr/share/rpcd /www/luci-static/resources/view");
-const INSTALLER_LEGACY_BIN = env("TRAFIRA_INSTALLER_LEGACY_BIN", "/usr/bin/" + LEGACY_BACKEND_PACKAGE);
-const INSTALLER_LEGACY_LIB = env("TRAFIRA_INSTALLER_LEGACY_LIB", "/usr/lib/" + LEGACY_BACKEND_PACKAGE);
-const INSTALLER_LEGACY_UCI_DEFAULTS = env("TRAFIRA_INSTALLER_LEGACY_UCI_DEFAULTS", "/etc/uci-defaults/50_luci-" + LEGACY_BACKEND_PACKAGE);
-const INSTALLER_LEGACY_LUCI_VIEW = env("TRAFIRA_INSTALLER_LEGACY_LUCI_VIEW", "/www/luci-static/resources/view/" + LEGACY_CONFIG_PACKAGE_ALT);
-const INSTALLER_LEGACY_MENU_JSON = env("TRAFIRA_INSTALLER_LEGACY_MENU_JSON", "/usr/share/luci/menu.d/luci-app-" + LEGACY_BACKEND_PACKAGE + ".json");
-const INSTALLER_LEGACY_ACL_JSON = env("TRAFIRA_INSTALLER_LEGACY_ACL_JSON", "/usr/share/rpcd/acl.d/luci-app-" + LEGACY_BACKEND_PACKAGE + ".json");
-const INSTALLER_LEGACY_CONFIG = env("TRAFIRA_INSTALLER_LEGACY_CONFIG", "/etc/config/" + LEGACY_BACKEND_PACKAGE);
-const INSTALLER_LEGACY_CONFIG_ALT = env("TRAFIRA_INSTALLER_LEGACY_CONFIG_FILE_ALT", "/etc/config/" + LEGACY_CONFIG_PACKAGE_ALT);
-const INSTALLER_LEGACY_PERSISTENT_DIR = env("TRAFIRA_INSTALLER_LEGACY_PERSISTENT_DIR", "/etc/" + LEGACY_BACKEND_PACKAGE);
-const INSTALLER_LEGACY_RUNTIME_DIR = env("TRAFIRA_INSTALLER_LEGACY_RUNTIME_DIR", "/var/run/" + LEGACY_BACKEND_PACKAGE);
-const INSTALLER_LEGACY_TMP_DIR = env("TRAFIRA_INSTALLER_LEGACY_TMP_DIR", "/tmp/" + LEGACY_BACKEND_PACKAGE);
-const INSTALLER_LEGACY_TMP_ALT_DIR = env("TRAFIRA_INSTALLER_LEGACY_TMP_ALT_DIR", "/tmp/" + LEGACY_CONFIG_PACKAGE_ALT);
 const INSTALLER_DEADLINE_HELPER = env("TRAFIRA_INSTALLER_DEADLINE_HELPER", "");
 const INSTALLER_COMMAND_RESULT = env("TRAFIRA_INSTALLER_COMMAND_RESULT", "/tmp/trafira-installer-command");
 const INSTALLER_RC_DIR = env("TRAFIRA_INSTALLER_RC_DIR", "/etc/rc.d");
@@ -691,33 +656,6 @@ function remove_globs(patterns) {
     for (let pattern in words(patterns))
         if (!remove_glob(pattern))
             removed = false;
-    return removed;
-}
-
-function remove_legacy_named_children(root) {
-    root = as_string(root);
-    if (root == "" || LEGACY_BRAND == "")
-        return true;
-
-    let entries = fs.lsdir(root);
-    if (type(entries) != "array")
-        return true;
-
-    let removed = true;
-    let brand = lc(LEGACY_BRAND);
-    for (let entry in entries) {
-        entry = as_string(entry);
-        let path = root + "/" + entry;
-        if (index(lc(entry), brand) >= 0) {
-            if (!remove_path(path))
-                removed = false;
-            continue;
-        }
-
-        let stat = fs.stat(path);
-        if (stat != null && stat.type == "directory" && !remove_legacy_named_children(path))
-            removed = false;
-    }
     return removed;
 }
 
@@ -898,7 +836,7 @@ function installer_recover_interrupted_cleanup(init_scripts) {
         let action = args[length(args) - 1];
         let stale = false;
 
-        if (action == "installer-cleanup-legacy") {
+        if (action == "installer-prepare-trafira") {
             for (let arg in args)
                 if (ends_with(arg, "/install-json.uc") || arg == "install-json.uc")
                     stale = true;
@@ -963,64 +901,23 @@ function installer_service_action(init_script, action) {
     return true;
 }
 
-function select_dns_owner(legacy) {
-    if (legacy) {
-        dns_owner_config = LEGACY_BACKEND_PACKAGE;
-        dns_owner_section = LEGACY_CONFIG_PACKAGE_ALT;
-        dns_owner_option_prefix = LEGACY_BRAND + "_";
-    }
-    else {
-        dns_owner_config = "trafira";
-        dns_owner_section = "trafira";
-        dns_owner_option_prefix = "trafira_";
-    }
-}
-
 let dnsmasq_failsafe_restore;
 
-function installer_restore_dnsmasq(bin_path, legacy) {
+function installer_restore_dnsmasq(bin_path) {
     if (path_executable(bin_path) && run_args([ bin_path, "restore_dnsmasq" ]))
         return true;
 
-    select_dns_owner(legacy);
     return dnsmasq_failsafe_restore();
 }
 
-function installer_deactivate_legacy_base() {
-    if (!path_executable(INSTALLER_LEGACY_BASE_INIT))
-        return true;
-
-    let running = installer_service_running_state(INSTALLER_LEGACY_BASE_INIT);
-    let enabled = installer_service_enabled_state(INSTALLER_LEGACY_BASE_INIT);
-    if (!running.known || !enabled.known) {
-        warn("Unable to determine the legacy service state before installation.\n");
-        return false;
-    }
-
-    if (running.value) {
-        warn("Detected a running legacy service. Stopping it before installing Trafira.\n");
-        if (!installer_service_action(INSTALLER_LEGACY_BASE_INIT, "stop"))
-            return false;
-    }
-
-    if (enabled.value) {
-        warn("Detected an enabled legacy autostart. Disabling it before installing Trafira.\n");
-        if (!installer_service_action(INSTALLER_LEGACY_BASE_INIT, "disable"))
-            return false;
-    }
-    return true;
-}
-
-function installer_cleanup_legacy() {
+function installer_prepare_trafira() {
     let trafira_installed = installer_package_installed("trafira");
-    let legacy_installed = LEGACY_BRAND != "" && installer_package_installed(LEGACY_BACKEND_PACKAGE);
-    let active_init = legacy_installed ? INSTALLER_LEGACY_INIT : INSTALLER_TRAFIRA_INIT;
-    let active_bin = legacy_installed ? INSTALLER_LEGACY_BIN : INSTALLER_TRAFIRA_BIN;
+    let active_init = INSTALLER_TRAFIRA_INIT;
+    let active_bin = INSTALLER_TRAFIRA_BIN;
 
     installer_recover_interrupted_cleanup([
         active_init,
-        INSTALLER_TRAFIRA_INIT,
-        INSTALLER_LEGACY_INIT
+        INSTALLER_TRAFIRA_INIT
     ]);
 
     let enabled = installer_service_enabled_state(active_init);
@@ -1041,7 +938,7 @@ function installer_cleanup_legacy() {
     if (path_executable(active_init)) {
         if (!installer_service_action(active_init, "stop"))
             return false;
-        installer_restore_dnsmasq(active_bin, legacy_installed);
+        installer_restore_dnsmasq(active_bin);
         if (!installer_service_action(active_init, "disable"))
             return false;
     }
@@ -1053,36 +950,14 @@ function installer_cleanup_legacy() {
     if (!installer_remove_package_prefix("luci-i18n-https-dns-proxy"))
         packages_removed = false;
 
-    if (legacy_installed) {
-        if (!installer_remove_package_prefix("luci-i18n-" + LEGACY_BACKEND_PACKAGE))
-            packages_removed = false;
-        if (!installer_remove_package("luci-app-" + LEGACY_BACKEND_PACKAGE))
-            packages_removed = false;
-        if (!installer_remove_package(LEGACY_BACKEND_PACKAGE))
-            packages_removed = false;
-    }
-
     if (!installer_remove_package_prefix("luci-i18n-trafira"))
         packages_removed = false;
     if (!installer_remove_package("luci-app-trafira"))
         packages_removed = false;
 
     if (!packages_removed) {
-        warn("Failed to remove one or more conflicting or legacy packages.\n");
+        warn("Failed to remove one or more conflicting packages.\n");
         return false;
-    }
-
-    if (legacy_installed) {
-        remove_path(INSTALLER_LEGACY_LIB);
-        remove_path(INSTALLER_LEGACY_INIT);
-        remove_path(INSTALLER_LEGACY_BIN);
-        for (let path in [
-            INSTALLER_LEGACY_LUCI_VIEW,
-            INSTALLER_LEGACY_MENU_JSON,
-            INSTALLER_LEGACY_ACL_JSON,
-            INSTALLER_LEGACY_UCI_DEFAULTS
-        ])
-            remove_path(path);
     }
 
     if (!trafira_installed) {
@@ -1105,75 +980,7 @@ function installer_cleanup_legacy() {
 
     print("TRAFIRA_WAS_ENABLED=", was_enabled ? "1" : "0", "\n");
     print("TRAFIRA_WAS_RUNNING=", was_running ? "1" : "0", "\n");
-    print("TRAFIRA_LEGACY_DETECTED=", legacy_installed ? "1" : "0", "\n");
     return true;
-}
-
-function installer_finalize_legacy() {
-    if (LEGACY_BRAND == "")
-        return false;
-
-    let legacy_tailscale_dir = INSTALLER_LEGACY_PERSISTENT_DIR + "/tailscale";
-    if (path_exists(legacy_tailscale_dir)) {
-        let entries = fs.lsdir(legacy_tailscale_dir);
-        let trafira_tailscale_dir = INSTALLER_TRAFIRA_PERSISTENT_DIR + "/tailscale";
-        if (type(entries) != "array" || !run_args([ "mkdir", "-p", trafira_tailscale_dir ])) {
-            warn("Failed to prepare legacy Tailscale state migration; the legacy directory was preserved.\n");
-            return false;
-        }
-
-        for (let entry in entries) {
-            entry = as_string(entry);
-            let source = legacy_tailscale_dir + "/" + entry;
-            let target = trafira_tailscale_dir + "/" + entry;
-            if (path_exists(target))
-                continue;
-
-            let temporary = trafira_tailscale_dir + "/." + entry + ".trafira-migrate";
-            if (!remove_path(temporary) ||
-                !run_args([ "cp", "-a", source, temporary ]) ||
-                !run_args([ "mv", temporary, target ])) {
-                remove_path(temporary);
-                warn("Failed to migrate legacy Tailscale state; the legacy directory was preserved.\n");
-                return false;
-            }
-        }
-    }
-
-    let cleaned = true;
-    for (let path in [
-        INSTALLER_LEGACY_CONFIG,
-        INSTALLER_LEGACY_CONFIG_ALT,
-        INSTALLER_LEGACY_PERSISTENT_DIR,
-        INSTALLER_LEGACY_RUNTIME_DIR,
-        INSTALLER_LEGACY_TMP_DIR,
-        INSTALLER_LEGACY_TMP_ALT_DIR
-    ])
-        if (!remove_path(path))
-            cleaned = false;
-
-    for (let prefix in [
-        INSTALLER_LEGACY_CONFIG,
-        INSTALLER_LEGACY_CONFIG_ALT,
-        INSTALLER_LEGACY_PERSISTENT_DIR,
-        INSTALLER_LEGACY_RUNTIME_DIR,
-        INSTALLER_LEGACY_TMP_DIR,
-        INSTALLER_LEGACY_TMP_ALT_DIR,
-        INSTALLER_LEGACY_INIT,
-        INSTALLER_LEGACY_BIN,
-        INSTALLER_LEGACY_LIB,
-        INSTALLER_LEGACY_UCI_DEFAULTS,
-        INSTALLER_LEGACY_LUCI_VIEW,
-        INSTALLER_LEGACY_MENU_JSON,
-        INSTALLER_LEGACY_ACL_JSON
-    ])
-        if (!remove_glob(prefix + "*"))
-            cleaned = false;
-
-    // Do not scan unrelated directories by brand name: they may contain base
-    // podkop files or user-created recovery archives unrelated to podkop-plus.
-
-    return cleaned;
 }
 
 function installer_post_install() {
@@ -1386,59 +1193,6 @@ function release_asset_sha256(name) {
     exit(1);
 }
 
-function forkop_config(source, target, backup) {
-    let data = fs.readfile(source);
-    if (data == null)
-        return false;
-    // Preserve custom absolute file references outside /etc/forkop as well.
-    // References stay unchanged; their copies are for manual recovery only.
-    for (let line in split(data, "\n")) {
-        let found = match(line, /^[ \t]*(option|list)[ \t]+[^ \t]+[ \t]+['"](\/[^'"\r\n]+)['"]/);
-        if (!found)
-            continue;
-        let path = fs.realpath(found[2]);
-        if (path == null)
-            continue;
-        let stat = fs.stat(path);
-        if (stat == null || stat.type != "file")
-            continue;
-        let copy = backup + "/references" + path;
-        let parent = substr(copy, 0, rindex(copy, "/"));
-        if (!run_args([ "mkdir", "-p", parent ]) || !run_args([ "cp", "-p", path, copy ]))
-            return false;
-    }
-    data = replace(data, /\/etc\/forkop(\/|['" \t\r\n])/g, "/etc/trafira$1");
-    return fs.writefile(target, data) != null;
-}
-
-function installer_stop_forkop() {
-    let root = env("TRAFIRA_MIGRATION_ROOT", "");
-    let init = root + "/etc/init.d/forkop";
-    let enabled = installer_service_enabled_state(init);
-    let running = installer_service_running_state(init);
-    if (!enabled.known || !running.known)
-        return false;
-    print("FORKOP_WAS_ENABLED=", enabled.value ? "1" : "0", "\n");
-    print("FORKOP_WAS_RUNNING=", running.value ? "1" : "0", "\n");
-    if (path_executable(init)) {
-        for (let action in [ "stop", "disable" ]) {
-            let result = installer_command_result([ init, action ], INSTALLER_SERVICE_ACTION_TIMEOUT);
-            if (!result.complete || result.status != 0)
-                return false;
-        }
-    }
-    // The old package's prerm restores its own DNS/fw4 state on removal.
-    // Run it before Trafira postinst establishes the new owner.
-    return true;
-}
-
-function installer_remove_forkop() {
-    for (let name in [ "luci-i18n-forkop-ru", "luci-app-forkop", "forkop" ])
-        if (!installer_remove_package(name))
-            return false;
-    return true;
-}
-
 let mode = ARGV[0] || "";
 
 if (mode == "github-message")
@@ -1449,12 +1203,6 @@ else if (mode == "release-asset-url")
     release_asset_url(ARGV[1], ARGV[2]);
 else if (mode == "release-asset-sha256")
     release_asset_sha256(ARGV[1]);
-else if (mode == "forkop-config")
-    exit(forkop_config(ARGV[1], ARGV[2], ARGV[3]) ? 0 : 1);
-else if (mode == "installer-stop-forkop")
-    exit(installer_stop_forkop() ? 0 : 1);
-else if (mode == "installer-remove-forkop")
-    exit(installer_remove_forkop() ? 0 : 1);
 else if (mode == "uci-get") {
     let value = uci_get(ARGV[1]);
     if (value != "")
@@ -1462,10 +1210,8 @@ else if (mode == "uci-get") {
 }
 else if (mode == "dnsmasq-failsafe-restore")
     exit(dnsmasq_failsafe_restore() ? 0 : 1);
-else if (mode == "installer-cleanup-legacy")
-    exit(installer_cleanup_legacy() ? 0 : 1);
-else if (mode == "installer-finalize-legacy")
-    exit(installer_finalize_legacy() ? 0 : 1);
+else if (mode == "installer-prepare-trafira")
+    exit(installer_prepare_trafira() ? 0 : 1);
 else if (mode == "installer-post-install")
     exit(installer_post_install() ? 0 : 1);
 else
@@ -1478,9 +1224,6 @@ EOF
 
 
 install_json_ucode() {
-    TRAFIRA_INSTALLER_LEGACY_BRAND="$LEGACY_BRAND" \
-    TRAFIRA_INSTALLER_LEGACY_BACKEND="$LEGACY_BACKEND_PACKAGE" \
-    TRAFIRA_INSTALLER_LEGACY_CONFIG_ALT="$LEGACY_CONFIG_PACKAGE_ALT" \
     TRAFIRA_INSTALLER_DEADLINE_HELPER="$(install_deadline_helper_path)" \
     TRAFIRA_INSTALLER_COMMAND_RESULT="$TMP_DIR/installer-command" \
         ucode "$(install_json_helper_path)" "$@"
@@ -1800,14 +1543,6 @@ select_sing_box_installation() {
     answer=""
     default_choice=1
 
-    if [ "$TRAFIRA_LEGACY_DETECTED" -eq 1 ] &&
-        [ -r /etc/init.d/sing-box ] &&
-        grep -Fq 'managed sing-box service for binary variants' /etc/init.d/sing-box; then
-        SING_BOX_INSTALL_VARIANT="extended-compressed"
-        msg "The legacy binary-managed sing-box variant will be reinstalled for Trafira"
-        return 0
-    fi
-
     if sing_box_is_present; then
         SING_BOX_INSTALL_VARIANT=""
         return 0
@@ -1871,169 +1606,33 @@ install_selected_sing_box() {
     fi
 }
 
-detect_forkop_migration() {
-    FORKOP_MIGRATION_DETECTED=0
-    TRAFIRA_MIGRATION_ROOT="${TRAFIRA_MIGRATION_ROOT:-}"
-    export TRAFIRA_MIGRATION_ROOT
-    FORKOP_SOURCE_CONFIG="$TRAFIRA_MIGRATION_ROOT/etc/config/forkop"
-    TRAFIRA_TARGET_CONFIG="$TRAFIRA_MIGRATION_ROOT/etc/config/trafira"
-    FORKOP_SOURCE_DATA="$TRAFIRA_MIGRATION_ROOT/etc/forkop"
-    TRAFIRA_TARGET_DATA="$TRAFIRA_MIGRATION_ROOT/etc/trafira"
-    if pkg_is_installed "$LEGACY_BRAND"; then
-        fail "An independent $LEGACY_BRAND package is installed. Remove it explicitly before installing Trafira; its files will not be deleted by this installer."
-    fi
-    if ! pkg_is_installed forkop && [ ! -e "$FORKOP_SOURCE_CONFIG" ] && [ ! -d "$FORKOP_SOURCE_DATA" ]; then
-        return 0
-    fi
-    [ ! -e "$TRAFIRA_TARGET_CONFIG" ] && [ ! -L "$TRAFIRA_TARGET_CONFIG" ] ||
-        fail "Both Forkop and Trafira configurations exist. Preserve and reconcile them before retrying; neither was overwritten."
-    [ ! -e "$TRAFIRA_TARGET_DATA" ] && [ ! -L "$TRAFIRA_TARGET_DATA" ] ||
-        fail "Trafira persistent data already exists; migration will not merge or overwrite it automatically."
-    if pkg_is_installed "$LEGACY_BACKEND_PACKAGE" ||
-        [ -e "$TRAFIRA_MIGRATION_ROOT/etc/config/$LEGACY_BACKEND_PACKAGE" ] ||
-        [ -e "$TRAFIRA_MIGRATION_ROOT/etc/config/${LEGACY_BRAND}_plus" ]; then
-        fail "Forkop and $LEGACY_BACKEND_PACKAGE coexist. Select and preserve one source configuration before migrating."
-    fi
-    FORKOP_MIGRATION_DETECTED=1
-    msg "Forkop detected; migration will preserve its configuration and persistent state in a private backup"
+reject_legacy_packages() {
+    for legacy_package in forkop podkop podkop-plus luci-app-forkop luci-app-podkop luci-app-podkop-plus luci-i18n-forkop-ru luci-i18n-podkop-ru luci-i18n-podkop-plus-ru; do
+        if pkg_is_installed "$legacy_package"; then
+            fail "$legacy_package is installed. Make a backup and remove the old packages manually before installing Trafira. Restore your settings yourself after installation."
+        fi
+    done
 }
 
 verify_trafira_packages() {
-    [ "$FORKOP_MIGRATION_DETECTED" -eq 1 ] || return 0
-    for migration_package in "$TRAFIRA_BACKEND_FILE" "$TRAFIRA_APP_FILE" "$TRAFIRA_I18N_FILE"; do
-        [ -n "$migration_package" ] || continue
-        migration_digest="$(printf '%s' "$TRAFIRA_RELEASE_JSON" | install_json_ucode release-asset-sha256 "${migration_package##*/}")" ||
-            fail "Release SHA256 digest is missing for ${migration_package##*/}; Forkop has not been stopped"
-        [ -n "$migration_digest" ] || fail "Release SHA256 digest is empty; migration aborted"
-        printf '%s  %s\n' "$migration_digest" "$migration_package" | sha256sum -c - >/dev/null 2>&1 ||
-            fail "Downloaded package checksum mismatch: ${migration_package##*/}; Forkop has not been stopped"
+    for package_file in "$TRAFIRA_BACKEND_FILE" "$TRAFIRA_APP_FILE" "$TRAFIRA_I18N_FILE"; do
+        [ -n "$package_file" ] || continue
+        package_digest="$(printf '%s' "$TRAFIRA_RELEASE_JSON" | install_json_ucode release-asset-sha256 "${package_file##*/}")" ||
+            fail "Release SHA256 digest is missing for ${package_file##*/}"
+        [ -n "$package_digest" ] || fail "Release SHA256 digest is empty for ${package_file##*/}"
+        printf '%s  %s\n' "$package_digest" "$package_file" | sha256sum -c - >/dev/null 2>&1 ||
+            fail "Downloaded package checksum mismatch: ${package_file##*/}"
     done
 }
 
-prepare_forkop_migration() {
-    [ "$FORKOP_MIGRATION_DETECTED" -eq 1 ] || return 0
-    FORKOP_MIGRATION_BACKUP="$TRAFIRA_MIGRATION_ROOT/etc/trafira-migration-backups/forkop.$(date +%Y%m%d-%H%M%S).$$"
-    (umask 077; mkdir -p "$FORKOP_MIGRATION_BACKUP/references") || fail "Cannot create persistent migration backup"
-    chmod 0700 "$FORKOP_MIGRATION_BACKUP" || fail "Cannot protect migration backup"
-    msg "Persistent Forkop backup: $FORKOP_MIGRATION_BACKUP"
-    for migration_path in etc/config/forkop etc/config/dhcp etc/config/firewall etc/forkop etc/init.d/sing-box usr/bin/sing-box usr/lib/libcronet.so; do
-        migration_source="$TRAFIRA_MIGRATION_ROOT/$migration_path"
-        if [ -e "$migration_source" ] || [ -L "$migration_source" ]; then
-            mkdir -p "$FORKOP_MIGRATION_BACKUP/original/${migration_path%/*}" &&
-                cp -a "$migration_source" "$FORKOP_MIGRATION_BACKUP/original/$migration_path" ||
-                fail "Could not back up $migration_source; Forkop has not been stopped"
-        fi
-    done
-    if [ -r "$FORKOP_SOURCE_CONFIG" ]; then
-        cp -p "$FORKOP_SOURCE_CONFIG" "$FORKOP_MIGRATION_BACKUP/forkop.config" &&
-            install_json_ucode forkop-config "$FORKOP_SOURCE_CONFIG" "$FORKOP_MIGRATION_BACKUP/trafira.config" "$FORKOP_MIGRATION_BACKUP" ||
-            fail "Could not prepare migrated configuration and referenced files; Forkop has not been stopped"
-        chmod 0600 "$FORKOP_MIGRATION_BACKUP/trafira.config" || fail "Cannot protect migrated configuration"
-    fi
-    printf '%s\n' 'Backup only: automatic package rollback is not attempted.' \
-        'If installation fails, keep both configurations and this directory.' \
-        'Package rollback requires retained installation files for the previous Forkop packages; they are not included in this state backup.' \
-        'To roll back, stop Trafira, reinstall the previous Forkop packages, then restore forkop.config and original/etc/forkop.' \
-        'original/etc/config/dhcp and firewall are pre-migration snapshots; restore only after reviewing subsequent changes.' \
-        >"$FORKOP_MIGRATION_BACKUP/RECOVERY.txt" || fail "Cannot write recovery instructions"
-    install_json_ucode installer-stop-forkop >"$FORKOP_MIGRATION_BACKUP/service-state.env" ||
-        fail "Could not stop and disable Forkop safely; backup: $FORKOP_MIGRATION_BACKUP"
-    # shellcheck disable=SC1090
-    . "$FORKOP_MIGRATION_BACKUP/service-state.env"
-    if [ -d "$FORKOP_SOURCE_DATA" ]; then
-        cp -a "$FORKOP_SOURCE_DATA" "$FORKOP_MIGRATION_BACKUP/persistent-stopped" ||
-            fail "Could not snapshot stopped Forkop state; backup: $FORKOP_MIGRATION_BACKUP"
-    fi
-    forkop_remove_status=0
-    install_json_ucode installer-remove-forkop || forkop_remove_status=$?
-    # Old prerm may delete the shared managed sing-box binary and init script.
-    # Recover those even after a partial package-removal failure.
-    for migration_path in etc/init.d/sing-box usr/bin/sing-box usr/lib/libcronet.so; do
-        migration_saved="$FORKOP_MIGRATION_BACKUP/original/$migration_path"
-        migration_target="$TRAFIRA_MIGRATION_ROOT/$migration_path"
-        if { [ -e "$migration_saved" ] || [ -L "$migration_saved" ]; } && [ ! -e "$migration_target" ] && [ ! -L "$migration_target" ]; then
-            cp -a "$migration_saved" "$migration_target" || fail "Could not restore shared $migration_path; backup: $FORKOP_MIGRATION_BACKUP"
-        fi
-    done
-    [ "$forkop_remove_status" -eq 0 ] || fail "Forkop package removal failed; backup retained at $FORKOP_MIGRATION_BACKUP"
-    # Recheck immediately before publishing; never overwrite an existing target.
-    [ ! -e "$TRAFIRA_TARGET_CONFIG" ] && [ ! -L "$TRAFIRA_TARGET_CONFIG" ] &&
-        [ ! -e "$TRAFIRA_TARGET_DATA" ] && [ ! -L "$TRAFIRA_TARGET_DATA" ] ||
-        fail "Trafira target appeared during migration; backup retained at $FORKOP_MIGRATION_BACKUP"
-    if [ -d "$FORKOP_MIGRATION_BACKUP/persistent-stopped" ]; then
-        cp -a "$FORKOP_MIGRATION_BACKUP/persistent-stopped" "$TRAFIRA_TARGET_DATA" ||
-            fail "Could not publish persistent data; backup: $FORKOP_MIGRATION_BACKUP"
-    fi
-    if [ -f "$FORKOP_MIGRATION_BACKUP/trafira.config" ]; then
-        cp -p "$FORKOP_MIGRATION_BACKUP/trafira.config" "$TRAFIRA_TARGET_CONFIG" ||
-            fail "Could not publish migrated configuration; backup: $FORKOP_MIGRATION_BACKUP"
-    fi
-    # Only rewrite the generated, recognizably managed script; keep custom init scripts unchanged.
-    migration_init="$TRAFIRA_MIGRATION_ROOT/etc/init.d/sing-box"
-    if [ -f "$migration_init" ] && grep -q 'Forkop managed sing-box' "$migration_init"; then
-        sed 's/Forkop/Trafira/g; s/FORKOP/TRAFIRA/g; s/forkop/trafira/g' "$migration_init" >"$FORKOP_MIGRATION_BACKUP/sing-box.trafira" &&
-            cat "$FORKOP_MIGRATION_BACKUP/sing-box.trafira" >"$migration_init" ||
-            fail "Could not update managed sing-box paths; backup: $FORKOP_MIGRATION_BACKUP"
-    fi
-}
-
-finish_forkop_migration() {
-    [ "$FORKOP_MIGRATION_DETECTED" -eq 1 ] || return 0
-    # Retire the originals only after all new packages and post-install actions.
-    # Keeping them in the private backup also makes subsequent installer runs
-    # unambiguously normal Trafira upgrades.
-    if [ -e "$FORKOP_SOURCE_CONFIG" ] || [ -L "$FORKOP_SOURCE_CONFIG" ]; then
-        mv "$FORKOP_SOURCE_CONFIG" "$FORKOP_MIGRATION_BACKUP/retired-forkop.config" ||
-            fail "Trafira installed, but old configuration could not be archived: $FORKOP_MIGRATION_BACKUP"
-    fi
-    if [ -e "$FORKOP_SOURCE_DATA" ] || [ -L "$FORKOP_SOURCE_DATA" ]; then
-        mv "$FORKOP_SOURCE_DATA" "$FORKOP_MIGRATION_BACKUP/retired-persistent" ||
-            fail "Trafira installed, but old persistent data could not be archived: $FORKOP_MIGRATION_BACKUP"
-    fi
-}
-
-cleanup_legacy_installation() {
+prepare_trafira_installation() {
     state_file="$TMP_DIR/install-state.env"
 
-    install_json_ucode installer-cleanup-legacy >"$state_file" ||
+    install_json_ucode installer-prepare-trafira >"$state_file" ||
         fail "Failed to prepare the system before Trafira package installation"
 
     # shellcheck disable=SC1090
     . "$state_file"
-}
-
-detect_legacy_installation() {
-    TRAFIRA_LEGACY_DETECTED=0
-    LEGACY_CONFIG_BACKUP=""
-
-    if ! pkg_is_installed "$LEGACY_BACKEND_PACKAGE"; then
-        legacy_config_present=0
-        for legacy_config_path in \
-            "/etc/config/$LEGACY_BACKEND_PACKAGE" \
-            "/etc/config/$LEGACY_CONFIG_PACKAGE_ALT"; do
-            if [ -r "$legacy_config_path" ]; then
-                legacy_config_present=1
-                break
-            fi
-        done
-        [ "$legacy_config_present" -eq 1 ] || return 0
-    fi
-
-    [ ! -e /etc/config/trafira ] && [ ! -L /etc/config/trafira ] ||
-        fail "Both legacy and Trafira configurations exist. Reconcile them before retrying; Trafira configuration was not overwritten."
-    TRAFIRA_LEGACY_DETECTED=1
-    for legacy_config_path in \
-        "/etc/config/$LEGACY_BACKEND_PACKAGE" \
-        "/etc/config/$LEGACY_CONFIG_PACKAGE_ALT"; do
-        if [ -r "$legacy_config_path" ]; then
-            LEGACY_CONFIG_BACKUP="$TMP_DIR/legacy-config.backup"
-            cp "$legacy_config_path" "$LEGACY_CONFIG_BACKUP" ||
-                fail "Failed to back up the legacy configuration"
-            break
-        fi
-    done
-
-    msg "Legacy installation detected; its packages will be removed and its configuration will be upgraded"
 }
 
 decide_i18n_installation() {
@@ -2041,14 +1640,7 @@ decide_i18n_installation() {
 
     detect_installer_language
 
-    if pkg_is_installed "luci-i18n-trafira-ru" || pkg_is_installed "luci-i18n-forkop-ru"; then
-        TRAFIRA_I18N_REQUESTED=1
-        msg "$(installer_text i18n_installed)"
-        return 0
-    fi
-
-    if [ "$TRAFIRA_LEGACY_DETECTED" -eq 1 ] &&
-        pkg_is_installed "luci-i18n-${LEGACY_BACKEND_PACKAGE}-ru"; then
+    if pkg_is_installed "luci-i18n-trafira-ru"; then
         TRAFIRA_I18N_REQUESTED=1
         msg "$(installer_text i18n_installed)"
         return 0
@@ -2090,30 +1682,6 @@ install_backend_package() {
     pkg_install_files "$TRAFIRA_BACKEND_FILE" || fail "trafira installation failed"
 }
 
-migrate_legacy_configuration() {
-    [ "$TRAFIRA_LEGACY_DETECTED" -eq 1 ] || return 0
-
-    if [ -n "$LEGACY_CONFIG_BACKUP" ]; then
-        cp "$LEGACY_CONFIG_BACKUP" /etc/config/trafira ||
-            fail "Failed to restore the legacy configuration for migration"
-        chmod 0644 /etc/config/trafira ||
-            fail "Failed to set permissions on the Trafira configuration"
-
-        msg "Migrating the legacy configuration to Trafira"
-        if ! TRAFIRA_CONFIG_NAME="trafira" \
-            TRAFIRA_LIB="/usr/lib/trafira" \
-            ucode -L /usr/lib/trafira /usr/lib/trafira/config/migration.uc migrate-podkop; then
-            cp "$LEGACY_CONFIG_BACKUP" /etc/config/trafira 2>/dev/null || true
-            fail "Legacy configuration migration failed; the original configuration was restored"
-        fi
-    else
-        warn "The legacy package had no readable configuration; Trafira defaults will be used"
-    fi
-
-    install_json_ucode installer-finalize-legacy ||
-        fail "Failed to remove legacy configuration and cache files after migration"
-}
-
 install_ui_packages() {
     pkg_install_files "$TRAFIRA_APP_FILE" || fail "luci-app-trafira installation failed"
 
@@ -2136,13 +1704,12 @@ main() {
 
     parse_args "$@"
     check_root
+    reject_legacy_packages
     init_tmp_dir
     detect_fetcher
     sync_time
     check_system
 
-    detect_forkop_migration
-    detect_legacy_installation
     decide_i18n_installation
     select_sing_box_installation
 
@@ -2152,19 +1719,12 @@ main() {
     resolve_trafira_release
     download_trafira_packages
     verify_trafira_packages
-    prepare_forkop_migration
 
-    cleanup_legacy_installation
-    if [ "$FORKOP_MIGRATION_DETECTED" -eq 1 ]; then
-        TRAFIRA_WAS_ENABLED="$FORKOP_WAS_ENABLED"
-        TRAFIRA_WAS_RUNNING="$FORKOP_WAS_RUNNING"
-    fi
+    prepare_trafira_installation
     install_backend_package
-    migrate_legacy_configuration
     install_ui_packages
     install_selected_sing_box
     post_install
-    finish_forkop_migration
 
     msg "Trafira $TRAFIRA_PACKAGE_VERSION has been installed successfully"
     msg "Source release: ${REPO_OWNER}/${REPO_NAME}@${TRAFIRA_RELEASE_TAG}"
