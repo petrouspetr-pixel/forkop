@@ -3360,3 +3360,27 @@ msgstr ""
 
 msgid "Native fallback reacts to real connection failures and requires sing-box extended. The watchdog mode works with all supported sing-box variants."
 msgstr ""
+
+msgid "DoH client certificate authentication"
+msgstr ""
+
+msgid "Use a client certificate only for the specified main DoH server."
+msgstr ""
+
+msgid "DoH certificate hostname"
+msgstr ""
+
+msgid "Hostname of a configured main DoH server, without a scheme, port or path."
+msgstr ""
+
+msgid "Client certificate file"
+msgstr ""
+
+msgid "Client private key file"
+msgstr ""
+
+msgid "Absolute path to an existing file on the router. Enter the path, not the file contents."
+msgstr ""
+
+msgid "Enter an absolute file path"
+msgstr ""

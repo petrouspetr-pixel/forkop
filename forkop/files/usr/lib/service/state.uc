@@ -1396,6 +1396,11 @@ function sing_box_signature_body(settings, sections, servers, mwan3_active) {
 
     body = signature_add_value(body, "settings.dns_type", option(settings, "dns_type", "doh"));
     body = signature_add_value(body, "settings.dns_strategy", option(settings, "dns_strategy", "prefer_ipv4"));
+    if (bool_option_value(settings, "dns_mtls_enabled", false) == "1") {
+        body = signature_add_value(body, "settings.dns_mtls_enabled", "1");
+        for (let key in [ "dns_mtls_host", "dns_mtls_client_certificate", "dns_mtls_client_key" ])
+            body = signature_add_value(body, "settings." + key, option(settings, key, ""));
+    }
     for (let value in list_option(settings, "dns_server", "77.88.8.8"))
         body = signature_add_value(body, "settings.dns_server", value);
     for (let value in list_option(settings, "bootstrap_dns_server", "77.88.8.8"))

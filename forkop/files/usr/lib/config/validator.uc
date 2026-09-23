@@ -899,6 +899,10 @@ function dns_setting_values(settings, key) {
 }
 
 function validate_dns_settings(settings, sections, context) {
+    let dns = require("singbox.dns");
+    let mtls_error = dns.mtls_validation_error(settings);
+    if (mtls_error != "")
+        fail_validation(mtls_error + " Aborted.");
     let dns_type = option(settings, "dns_type", "udp");
     if (!contains([ "udp", "dot", "doh" ], dns_type))
         fail_validation("Unsupported DNS protocol type '" + dns_type + "'. Use udp, dot, or doh. Aborted.");

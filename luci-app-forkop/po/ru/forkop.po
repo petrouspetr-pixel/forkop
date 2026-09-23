@@ -2319,3 +2319,27 @@ msgstr "Нативный fallback (sing-box extended)"
 
 msgid "Native fallback reacts to real connection failures and requires sing-box extended. The watchdog mode works with all supported sing-box variants."
 msgstr "Нативный fallback реагирует на реальные ошибки соединения и требует sing-box extended. Режим контроля Forkop работает со всеми поддерживаемыми вариантами sing-box."
+
+msgid "DoH client certificate authentication"
+msgstr "Аутентификация DoH клиентским сертификатом"
+
+msgid "Use a client certificate only for the specified main DoH server."
+msgstr "Использовать клиентский сертификат только для указанного основного DoH-сервера."
+
+msgid "DoH certificate hostname"
+msgstr "Имя хоста для сертификата DoH"
+
+msgid "Hostname of a configured main DoH server, without a scheme, port or path."
+msgstr "Имя хоста настроенного основного DoH-сервера без протокола, порта и пути."
+
+msgid "Client certificate file"
+msgstr "Файл клиентского сертификата"
+
+msgid "Client private key file"
+msgstr "Файл закрытого ключа клиента"
+
+msgid "Absolute path to an existing file on the router. Enter the path, not the file contents."
+msgstr "Абсолютный путь к существующему файлу на роутере. Введите путь, а не содержимое файла."
+
+msgid "Enter an absolute file path"
+msgstr "Введите абсолютный путь к файлу"

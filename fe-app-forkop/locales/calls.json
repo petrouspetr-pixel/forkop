@@ -5663,5 +5663,61 @@
     "places": [
       "../luci-app-forkop/htdocs/luci-static/resources/view/forkop/section.js:2985"
     ]
+  },
+  {
+    "call": "DoH client certificate authentication",
+    "key": "DoH client certificate authentication",
+    "places": [
+      "../luci-app-forkop/htdocs/luci-static/resources/view/forkop/settings.js:189"
+    ]
+  },
+  {
+    "call": "Use a client certificate only for the specified main DoH server.",
+    "key": "Use a client certificate only for the specified main DoH server.",
+    "places": [
+      "../luci-app-forkop/htdocs/luci-static/resources/view/forkop/settings.js:190"
+    ]
+  },
+  {
+    "call": "DoH certificate hostname",
+    "key": "DoH certificate hostname",
+    "places": [
+      "../luci-app-forkop/htdocs/luci-static/resources/view/forkop/settings.js:199"
+    ]
+  },
+  {
+    "call": "Hostname of a configured main DoH server, without a scheme, port or path.",
+    "key": "Hostname of a configured main DoH server, without a scheme, port or path.",
+    "places": [
+      "../luci-app-forkop/htdocs/luci-static/resources/view/forkop/settings.js:206"
+    ]
+  },
+  {
+    "call": "Client certificate file",
+    "key": "Client certificate file",
+    "places": [
+      "../luci-app-forkop/htdocs/luci-static/resources/view/forkop/settings.js:210"
+    ]
+  },
+  {
+    "call": "Client private key file",
+    "key": "Client private key file",
+    "places": [
+      "../luci-app-forkop/htdocs/luci-static/resources/view/forkop/settings.js:211"
+    ]
+  },
+  {
+    "call": "Absolute path to an existing file on the router. Enter the path, not the file contents.",
+    "key": "Absolute path to an existing file on the router. Enter the path, not the file contents.",
+    "places": [
+      "../luci-app-forkop/htdocs/luci-static/resources/view/forkop/settings.js:218"
+    ]
+  },
+  {
+    "call": "Enter an absolute file path",
+    "key": "Enter an absolute file path",
+    "places": [
+      "../luci-app-forkop/htdocs/luci-static/resources/view/forkop/settings.js:231"
+    ]
   }
 ]
