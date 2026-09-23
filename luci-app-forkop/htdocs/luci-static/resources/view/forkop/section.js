@@ -166,8 +166,13 @@ function dependsOnRuleConditions(option) {
       option.depends({ action, [condition]: /\S/ }),
     ),
   );
-  ["domain", "community_lists", "_dns_rule_set", "_dns_domain_ip_lists"].forEach(
-    (condition) => option.depends({ action: "dns", [condition]: /\S/ }),
+  [
+    "domain",
+    "community_lists",
+    "_dns_rule_set",
+    "_dns_domain_ip_lists",
+  ].forEach((condition) =>
+    option.depends({ action: "dns", [condition]: /\S/ }),
   );
   return option;
 }
@@ -2614,9 +2619,7 @@ function addUrlTestItemOptions(itemSection, options = {}) {
     form.Flag,
     "interrupt_exist_connections",
     _("Interrupt connections"),
-    _(
-      "Interrupt connections when URLTest switches the selected server",
-    ),
+    _("Interrupt connections when URLTest switches the selected server"),
   );
   o.default = "1";
   o.rmempty = false;
@@ -3053,7 +3056,9 @@ function addPriorityGroupItemOptions(itemSection, options = {}) {
     form.Value,
     "blacklist_timeout",
     _("Failed server retry interval"),
-    _("After a connection failure, retry the skipped server after this duration"),
+    _(
+      "After a connection failure, retry the skipped server after this duration",
+    ),
   );
   o.depends("implementation", "native_fallback");
   o.default = "1m";
@@ -3120,7 +3125,10 @@ function addPriorityGroupItemOptions(itemSection, options = {}) {
     _("Faster server search interval"),
     _("Use sing-box duration format like 1d, 12h or 30m"),
   );
-  o.depends({ implementation: "watchdog", switch_to_faster_same_priority: "1" });
+  o.depends({
+    implementation: "watchdog",
+    switch_to_faster_same_priority: "1",
+  });
   o.default = "3m";
   o.rmempty = false;
   o.validate = function (itemId, value) {
@@ -3271,7 +3279,9 @@ function addDashboardServerFilterOptions(section) {
     form.ListValue,
     "dashboard_filter_mode",
     _("Servers on dashboard"),
-    _("Filter the servers that will be displayed on the dashboard. Excluded servers are also removed from the URLTest and Priority groups of this section."),
+    _(
+      "Filter the servers that will be displayed on the dashboard. Excluded servers are also removed from the URLTest and Priority groups of this section.",
+    ),
   );
   urlTestFilterModeChoices().forEach((choice) =>
     o.value(choice.value, choice.label),
@@ -5262,7 +5272,11 @@ function uniqueDomainTextValues(values) {
 }
 
 function appendUniqueDomainTextValues(textValue, values) {
-  const originalText = typeof textValue === "string" ? textValue : "";
+  const originalText = Array.isArray(textValue)
+    ? textValue.join("\n")
+    : typeof textValue === "string"
+      ? textValue
+      : "";
   const seen = new Set(
     main.parseValueList(originalText).map((value) => `${value}`.toLowerCase()),
   );
@@ -7899,9 +7913,7 @@ function createSectionContent(section) {
     form.DynamicList,
     "domain_ip_lists",
     _("Domain and IP lists"),
-    _(
-      "Add URLs or local paths to .lst lists containing domains and subnets.",
-    ),
+    _("Add URLs or local paths to .lst lists containing domains and subnets."),
   );
   domainIpListsOption.modalonly = true;
   // Both widgets map to domain_ip_lists, so neither inactive view may erase shared storage.
