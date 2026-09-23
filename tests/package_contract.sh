@@ -77,6 +77,10 @@ grep -Fq "replace('\\\\n', '\\n')" "$BUILD_WORKFLOW" ||
 grep -Fq 'body: ${{ needs.preparation.outputs.release_notes }}' "$BUILD_WORKFLOW" ||
   fail "release action must receive normalized Markdown notes"
 
+# Display branding must not leak into the machine-readable x.y.z release tag.
+grep -Fxq '          tag_name: ${{ needs.preparation.outputs.version }}' "$BUILD_WORKFLOW" ||
+  fail "release tag must use the validated numeric version without a display-name prefix"
+
 for conflict in https-dns-proxy nextdns luci-app-passwall luci-app-passwall2 forkop podkop-plus podkop; do
   grep -E 'CONFLICTS:=' "$TRAFIRA_MAKEFILE" | grep -Fq "$conflict" ||
     fail "trafira/Makefile conflicts are missing $conflict"

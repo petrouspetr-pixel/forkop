@@ -111,6 +111,6 @@ jobs:
           prerelease: false
           make_latest: true
           name: Trafira ${{ needs.preparation.outputs.version }}
-          tag_name: Trafira ${{ needs.preparation.outputs.version }}
+          tag_name: ${{ needs.preparation.outputs.version }}
           target_commitish: ${{ needs.preparation.outputs.commitish }}
           body: ${{ needs.preparation.outputs.release_notes }}
