@@ -66,6 +66,22 @@ function fail(message) {
 
 const retiredMissingCurrent = new Set([
   "urltest_hide_filtered_outbounds",
+  // These old-project fields were only referenced by the removed Podkop
+  // importer. Transitions now require manual configuration; keep the rest
+  // of the stable contract checked, including subscription_urls fallback.
+  "cmd_opts",
+  "connection_type",
+  "enable_udp_over_tcp",
+  "group_by_countries",
+  "proxy_config_type",
+  "proxy_string",
+  "routing_excluded_ips",
+  "subscription_detect_server_countries",
+  "subscription_group_by_countries",
+  "subscription_update_interval_disabled",
+  "subscription_user_agent",
+  "urltest_check_interval_disabled",
+  "urltest_proxy_links",
 ]);
 const missing = matrix.fields.filter((field) => field.status === "missing_current" && !retiredMissingCurrent.has(field.name));
 if (missing.length) {
@@ -80,7 +96,8 @@ for (const name of ["dns_type", "subscription_urls", "selector_proxy_links", "ac
   }
 }
 
-if ((matrix.summary.supported || 0) < 140) {
+// The former minimum included 13 fields kept alive only by the importer.
+if ((matrix.summary.supported || 0) < 127) {
   fail(`unexpectedly small supported config surface: ${matrix.summary.supported || 0}`);
 }
 
