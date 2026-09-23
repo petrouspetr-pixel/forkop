@@ -508,7 +508,7 @@ msgid "Config File Path"
 msgstr ""
 
 #: ../luci-app-forkop/htdocs/luci-static/resources/view/forkop/forkop.js:343
-msgid "Configuration for Forkop service"
+msgid "Configuration for Trafira service"
 msgstr ""
 
 #: ../luci-app-forkop/htdocs/luci-static/resources/view/forkop/section.js:4473
@@ -585,7 +585,7 @@ msgid "Default address for checking server availability and latency. URLTest use
 msgstr ""
 
 #: ../luci-app-forkop/htdocs/luci-static/resources/view/forkop/settings.js:398
-msgid "Delay in milliseconds before reloading Forkop after interface UP"
+msgid "Delay in milliseconds before reloading Trafira after interface UP"
 msgstr ""
 
 #: ../luci-app-forkop/htdocs/luci-static/resources/view/forkop/settings.js:405
@@ -1114,11 +1114,11 @@ msgid "Forkop service is stopped. Start the service to display the dashboard."
 msgstr ""
 
 #: ../luci-app-forkop/htdocs/luci-static/resources/view/forkop/forkop.js:342
-msgid "Forkop Settings"
+msgid "Trafira Settings"
 msgstr ""
 
 #: ../luci-app-forkop/htdocs/luci-static/resources/view/forkop/settings.js:602
-msgid "Forkop will not modify your DHCP configuration"
+msgid "Trafira will not modify your DHCP configuration"
 msgstr ""
 
 #: src/forkop/tabs/diagnostic/checks/runByedpiCheck.ts:91
@@ -3346,7 +3346,7 @@ msgid "Number of consecutive successful checks required before returning to a hi
 msgid "Failover implementation"
 msgstr ""
 
-msgid "Forkop watchdog"
+msgid "Trafira watchdog"
 msgstr ""
 
 msgid "Failed server retry interval"

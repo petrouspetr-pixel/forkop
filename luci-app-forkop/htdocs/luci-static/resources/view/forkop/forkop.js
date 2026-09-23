@@ -338,8 +338,8 @@ const EntryPoint = {
     };
     const forkopMap = new form.Map(
       UCI_PACKAGE,
-      _("Forkop Settings"),
-      _("Configuration for Forkop service"),
+      _("Trafira Settings"),
+      _("Configuration for Trafira service"),
     );
     forkopMap.tabbed = true;
     const originalHandleSaveApply = forkopMap.handleSaveApply;

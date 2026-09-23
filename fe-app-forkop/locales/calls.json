@@ -818,8 +818,8 @@
     ]
   },
   {
-    "call": "Configuration for Forkop service",
-    "key": "Configuration for Forkop service",
+    "call": "Configuration for Trafira service",
+    "key": "Configuration for Trafira service",
     "places": [
       "../luci-app-forkop/htdocs/luci-static/resources/view/forkop/forkop.js:343"
     ]
@@ -949,8 +949,8 @@
     ]
   },
   {
-    "call": "Delay in milliseconds before reloading Forkop after interface UP",
-    "key": "Delay in milliseconds before reloading Forkop after interface UP",
+    "call": "Delay in milliseconds before reloading Trafira after interface UP",
+    "key": "Delay in milliseconds before reloading Trafira after interface UP",
     "places": [
       "../luci-app-forkop/htdocs/luci-static/resources/view/forkop/settings.js:398"
     ]
@@ -1841,15 +1841,15 @@
     ]
   },
   {
-    "call": "Forkop Settings",
-    "key": "Forkop Settings",
+    "call": "Trafira Settings",
+    "key": "Trafira Settings",
     "places": [
       "../luci-app-forkop/htdocs/luci-static/resources/view/forkop/forkop.js:342"
     ]
   },
   {
-    "call": "Forkop will not modify your DHCP configuration",
-    "key": "Forkop will not modify your DHCP configuration",
+    "call": "Trafira will not modify your DHCP configuration",
+    "key": "Trafira will not modify your DHCP configuration",
     "places": [
       "../luci-app-forkop/htdocs/luci-static/resources/view/forkop/settings.js:602"
     ]
@@ -5629,8 +5629,8 @@
     ]
   },
   {
-    "call": "Forkop watchdog",
-    "key": "Forkop watchdog",
+    "call": "Trafira watchdog",
+    "key": "Trafira watchdog",
     "places": [
       "../luci-app-forkop/htdocs/luci-static/resources/view/forkop/section.js:2952"
     ]

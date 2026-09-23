@@ -9221,7 +9221,7 @@ function renderWikiDisclaimer(kind) {
       classNames: ["cbi-button-save"],
       text: _("Open Project Page"),
       onClick: () => window.open(
-        "https://github.com/ushan0v/forkop#readme",
+        "https://github.com/petrouspetr-pixel/trafira#readme",
         "_blank",
         "noopener,noreferrer"
       )
@@ -13499,7 +13499,7 @@ function getComponentCards() {
     {
       component: "forkop",
       column: 0,
-      title: "Forkop",
+      title: "Trafira",
       version: systemInfoLoading ? _("Loading...") : normalizeCompiledVersion(systemInfo.forkop_version),
       latestVersion: getLatestVersion("forkop"),
       releaseUrl: getGitHubReleaseUrl("forkop"),

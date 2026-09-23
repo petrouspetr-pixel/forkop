@@ -3020,7 +3020,7 @@ function addPriorityGroupItemOptions(itemSection, options = {}) {
       "Native fallback reacts to real connection failures and requires sing-box extended. The watchdog mode works with all supported sing-box variants.",
     ),
   );
-  o.value("watchdog", _("Forkop watchdog"));
+  o.value("watchdog", _("Trafira watchdog"));
   o.value("native_fallback", _("Native fallback (sing-box extended)"));
   o.default = "watchdog";
   o.rmempty = false;
