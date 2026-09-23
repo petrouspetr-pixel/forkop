@@ -88,4 +88,20 @@ describe('socket service', () => {
 
     expect(FakeWebSocket.instances).toHaveLength(1);
   });
+
+  it('cancels pending reconnects when disconnecting all sockets', () => {
+    const listener = vi.fn();
+    socket.subscribe('ws://router.test', listener);
+    FakeWebSocket.instances[0].emit('close');
+
+    socket.disconnectAll();
+    vi.advanceTimersByTime(10000);
+
+    expect(FakeWebSocket.instances).toHaveLength(1);
+    socket.subscribe('ws://router.test', vi.fn());
+    FakeWebSocket.instances[1].emit('message', {
+      data: 'new connection',
+    } as MessageEvent);
+    expect(listener).not.toHaveBeenCalled();
+  });
 });

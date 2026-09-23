@@ -864,7 +864,7 @@ function duration_to_seconds(value) {
         rest = substr(rest, length(token));
     }
 
-    return total <= 0 ? null : int(total + 0.5);
+    return total <= 0 ? null : total;
 }
 
 function urltest_check_interval(section, urltest_id) {

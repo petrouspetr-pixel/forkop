@@ -99,6 +99,16 @@ cat >"$WORK_DIR/children.json" <<'JSON'
       "tolerance": "50",
       "testing_url": "https://www.gstatic.com/generate_204",
       "interrupt_exist_connections": "1"
+    },
+    {
+      ".name": "cfg010006",
+      ".type": "urltest",
+      "section": "proxy",
+      "name": "Fraction above default idle",
+      "check_interval": "30m100ms",
+      "tolerance": "50",
+      "testing_url": "https://www.gstatic.com/generate_204",
+      "interrupt_exist_connections": "1"
     }
   ]
 }
@@ -119,7 +129,8 @@ let expected = {
     "proxy-urltest-cfg010001-out": [ "1h", "1h" ],
     "proxy-urltest-cfg010002-out": [ "1h30m", "1h30m" ],
     "proxy-urltest-cfg010003-out": [ "3m", "3m" ],
-    "proxy-urltest-cfg010004-out": [ "3m", "45m" ]
+    "proxy-urltest-cfg010004-out": [ "3m", "45m" ],
+    "proxy-urltest-cfg010006-out": [ "30m100ms", "30m100ms" ]
 };
 
 for (let tag, values in expected) {
