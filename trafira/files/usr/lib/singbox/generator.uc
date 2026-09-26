@@ -2557,20 +2557,37 @@ function add_source_dns_matchers(rule, source_ip_cidr) {
 }
 
 function add_source_aware_bypass_dns_rules(config, matchers, rewrite_ttl) {
-    push_dns_matcher_rule(config, {
-        type: "logical",
-        mode: "and",
-        rules: [
-            copy_dns_matchers(matchers),
-            {
-                ip_cidr: [ runtime_constants.FAKEIP_INET4_RANGE, runtime_constants.FAKEIP_INET6_RANGE ],
-                invert: true
-            }
-        ],
-        action: "route",
-        server: runtime_constants.DNSMASQ_DNS_SERVER_TAG,
-        rewrite_ttl
-    });
+    let non_fakeip_answer = {
+        ip_cidr: [ runtime_constants.FAKEIP_INET4_RANGE, runtime_constants.FAKEIP_INET6_RANGE ],
+        invert: true
+    };
+
+    if (sing_box_uses_legacy_independent_cache(runtime_sing_box_version)) {
+        push_dns_matcher_rule(config, {
+            type: "logical",
+            mode: "and",
+            rules: [ copy_dns_matchers(matchers), non_fakeip_answer ],
+            action: "route",
+            server: runtime_constants.DNSMASQ_DNS_SERVER_TAG,
+            rewrite_ttl
+        });
+    }
+    else {
+        // sing-box 1.14+ rejects legacy address filters: evaluate dnsmasq first, then match its response.
+        let evaluate = copy_dns_matchers(matchers);
+        evaluate.action = "evaluate";
+        evaluate.server = runtime_constants.DNSMASQ_DNS_SERVER_TAG;
+        evaluate.rewrite_ttl = rewrite_ttl;
+        push_dns_matcher_rule(config, evaluate);
+
+        non_fakeip_answer.match_response = true;
+        push_dns_matcher_rule(config, {
+            type: "logical",
+            mode: "and",
+            rules: [ copy_dns_matchers(matchers), non_fakeip_answer ],
+            action: "respond"
+        });
+    }
 
     let fallback = copy_dns_matchers(matchers);
     fallback.action = "route";
